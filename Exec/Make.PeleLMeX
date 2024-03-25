@@ -57,6 +57,14 @@ ifeq ($(USE_RADIATION), TRUE)
    DEFINES += -DPELE_USE_RADIATION
 endif
 
+ifeq ($(USE_MF), TRUE)
+DEFINES += -DPELELM_USE_MF
+DEFINES += -DNUM_MF=$(NUM_MF)
+endif
+ifeq ($(USE_AGE), TRUE)
+DEFINES += -DPELELM_USE_AGE
+endif
+
 Bpack += $(foreach dir, $(LMdirs), $(PELE_HOME)/$(dir)/Make.package)
 Blocs += $(foreach dir, $(LMdirs), $(PELE_HOME)/$(dir))
 

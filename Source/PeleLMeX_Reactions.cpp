@@ -458,9 +458,19 @@ PeleLM::getScalarReactForce(std::unique_ptr<AdvanceAdvData>& advData)
       auto const& react = ldataR_p->I_R.const_array(mfi, 0);
       auto const& extF_rhoY = advData->Forcing[lev].array(mfi, 0);
       auto const& extF_rhoH = advData->Forcing[lev].array(mfi, NUM_SPECIES);
+#ifdef PELELM_USE_MF
+      auto const& rhoMF_o = ldataOld_p->state.const_array(mfi,FIRSTMFVAR);
+      auto const& rhoMF_n = ldataNew_p->state.const_array(mfi,FIRSTMFVAR);
+      auto const& extF_rhoMF = advData->Forcing[lev].array(mfi,NUM_SPECIES+1);
+#endif
       amrex::Real dtinv = 1.0 / m_dt;
       amrex::ParallelFor(
-        bx, [rhoY_o, rhoH_o, rhoY_n, rhoH_n, react, extF_rhoY, extF_rhoH,
+        bx, [rhoY_o, rhoH_o, rhoY_n, rhoH_n, react, 
+#ifdef PELELM_USE_MF
+             extF_rhoY, extF_rhoH, rhoMF_o, rhoMF_n, extF_rhoMF,
+#else
+          extF_rhoY, extF_rhoH,
+#endif
              dtinv] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
           for (int n = 0; n < NUM_SPECIES; n++) {
             extF_rhoY(i, j, k, n) =
@@ -468,6 +478,11 @@ PeleLM::getScalarReactForce(std::unique_ptr<AdvanceAdvData>& advData)
               react(i, j, k, n);
           }
           extF_rhoH(i, j, k) = (rhoH_n(i, j, k) - rhoH_o(i, j, k)) * dtinv;
+#ifdef PELELM_USE_MF
+          for (int m = 0; m < NUMMFVAR; m++) {
+            extF_rhoMF(i, j, k, m) = (rhoMF_n(i, j, k, m) - rhoMF_o(i, j, k, m)) * dtinv;
+          }
+#endif
         });
     }
   }

@@ -22,7 +22,13 @@
 #else
 #define NUMSOOTVAR 0
 #endif
-#define FIRSTAUX (RHORT + NUMEFIELD + NUMSOOTVAR + 1)
+#ifdef PELELM_USE_MF
+#define FIRSTMFVAR (RHORT + NUMEFIELD + NUMSOOTVAR + 1)
+#define NUMMFVAR NUM_MF
+#else
+#define NUMMFVAR 0
+#endif
+#define FIRSTAUX (RHORT + NUMEFIELD + NUMSOOTVAR + NUMMFVAR + 1)
 #define NVAR (FIRSTAUX + 0)
 // TODO: handle NAUX
 

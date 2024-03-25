@@ -173,10 +173,19 @@ PeleLM::MLevaluate(
     calcDiffusivity(AmrNewTime);
     computeDifferentialDiffusionTerms(AmrNewTime, diffData);
     for (int lev = 0; lev <= finest_level; ++lev) {
+#ifdef PELELM_USE_MF
+      MultiFab::Copy(
+        *a_MFVec[lev], diffData->Dnp1[lev], 0, a_comp, NUM_SPECIES + 2 + NUMMFVAR, 0);
+#else
       MultiFab::Copy(
         *a_MFVec[lev], diffData->Dnp1[lev], 0, a_comp, NUM_SPECIES + 2, 0);
+#endif
     }
+#ifdef PELELM_USE_MF
+    nComp = NUM_SPECIES + 2 + NUMMFVAR;
+#else
     nComp = NUM_SPECIES + 2;
+#endif
   } else if (a_var == "advTerm") {
     Vector<std::unique_ptr<MultiFab>> aliasMF(finest_level + 1);
     for (int lev = 0; lev <= finest_level; ++lev) {
@@ -223,6 +232,10 @@ PeleLM::MLevaluate(
         *a_MFVec[lev], ldata_p->diff_cc, 0, a_comp, NUM_SPECIES + 1, 0);
       MultiFab::Copy(
         *a_MFVec[lev], ldata_p->visc_cc, 0, a_comp + NUM_SPECIES + 1, 1, 0);
+#ifdef PELELM_USE_MF
+      MultiFab::Copy(
+        *a_MFVec[lev], ldata_p->diff_cc, NUM_SPECIES + 2, a_comp + NUM_SPECIES + 2, NUMMFVAR, 0);
+#endif
       if (m_use_soret != 0) {
         MultiFab::Copy(
           *a_MFVec[lev], ldata_p->diff_cc, NUM_SPECIES + 2,
@@ -232,7 +245,11 @@ PeleLM::MLevaluate(
     if (m_use_soret != 0) {
       nComp = 2 * NUM_SPECIES + 2;
     } else {
+#ifdef PELELM_USE_MF
+      nComp = NUM_SPECIES + 2 + NUMMFVAR;
+#else
       nComp = NUM_SPECIES + 2;
+#endif
     }
   } else if (a_var == "velForce") {
     // Velocity forces used in computing the velocity advance
