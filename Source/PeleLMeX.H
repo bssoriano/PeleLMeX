@@ -1018,7 +1018,10 @@ public:
 #ifdef PELE_USE_EFIELD
   void fillPatchPhiV(const PeleLM::TimeStamp& a_time);
 #endif
-
+  // FillPatch and return a MF
+#ifdef PELELM_USE_MF
+  void fillPatchMF(const PeleLM::TimeStamp &a_time);
+#endif
   // FillPatch and return a MF
   std::unique_ptr<amrex::MultiFab>
   fillPatchState(int lev, amrex::Real a_time, int nGrow);
@@ -1046,6 +1049,10 @@ public:
     amrex::MultiFab& a_temp,
     int temp_comp,
     int nGhost);
+#ifdef PELELM_USE_MF
+  void fillpatch_mf(
+    int lev, amrex::Real a_time, amrex::MultiFab& a_mf, int mf_comp, int nGhost);
+#endif
   void fillpatch_divu(
     int lev, amrex::Real a_time, amrex::MultiFab& a_divu, int nGhost);
   void fillpatch_gradp(
@@ -1419,6 +1426,11 @@ public:
   void updateScalarComp(
     std::unique_ptr<AdvanceAdvData>& advData, int state_comp, int ncomp);
 
+#ifdef PELELM_USE_MF
+  void updateMF(std::unique_ptr<AdvanceAdvData> &advData, std::unique_ptr<AdvanceDiffData> &diffData);
+  void checkMFstuff(std::unique_ptr<AdvanceAdvData> &advData, std::unique_ptr<AdvanceDiffData> &diffData);
+#endif
+
   void getScalarDiffForce(
     std::unique_ptr<AdvanceAdvData>& advData,
     std::unique_ptr<AdvanceDiffData>& diffData);
@@ -1557,7 +1569,11 @@ public:
 #ifdef PELE_USE_EFIELD
     return NUM_SPECIES + 2;
 #else
+#ifdef PELELM_USE_MF
+    return NUM_SPECIES + 2;
+#else
     return NUM_SPECIES + 1;
+#endif
 #endif
   }
 
@@ -1591,6 +1607,10 @@ public:
   getDensityVect(const PeleLM::TimeStamp& a_time);
   amrex::Vector<std::unique_ptr<amrex::MultiFab>>
   getSpeciesVect(const PeleLM::TimeStamp& a_time);
+#ifdef PELELM_USE_MF
+  amrex::Vector<std::unique_ptr<amrex::MultiFab>>
+  getMFVect(const PeleLM::TimeStamp &a_time);
+#endif
   amrex::Vector<std::unique_ptr<amrex::MultiFab>>
   getRhoHVect(const PeleLM::TimeStamp& a_time);
   amrex::Vector<std::unique_ptr<amrex::MultiFab>>
@@ -1965,6 +1985,8 @@ public:
   std::string m_adv_redist_type = "StateRedist";
   std::string m_diff_redist_type = "FluxRedist";
 #endif
+   int m_Zdir_refine_LevMax = -1;
+   amrex::Real m_MaxZdir_refine = -1.e+200;
   //-----------------------------------------------------------------------------
 
   //-----------------------------------------------------------------------------
