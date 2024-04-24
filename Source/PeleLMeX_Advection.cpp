@@ -692,7 +692,7 @@ PeleLM::computeScalarAdvTerms(std::unique_ptr<AdvanceAdvData>& advData)
 #ifdef AMREX_USE_EB
         ebfact,
 #endif
-        m_Godunov_ppm, m_Godunov_ForceInTrans, is_velocity, 
+        m_Godunov_ppm != 0, m_Godunov_ForceInTrans != 0, is_velocity, 
         fluxes_are_area_weighted, m_advection_type, m_Godunov_ppm_limiter);
     }
 #endif
@@ -794,6 +794,31 @@ PeleLM::computeScalarAdvTerms(std::unique_ptr<AdvanceAdvData>& advData)
       lev, m_dt, divTmp, NUM_SPECIES, advData->AofS[lev], RHOH, ldata_p->state,
       RHOH, 1, bcRecRhoH_d.dataPtr(), geom[lev]);
     EB_set_covered(advData->AofS[lev], 0.0);
+#ifdef PELELM_USE_MF
+
+    // Use a temporary MF to hold divergence before redistribution
+    // int nGrow_divTmp = 3;
+    MultiFab divTmpMF(
+      grids[lev], dmap[lev], NVAR, nGrow_divTmp, MFInfo(),
+      EBFactory(lev));
+    divTmpMF.setVal(0.0);
+    advFluxDivergence(
+      lev, divTmpMF, FIRSTMFVAR, divu, GetArrOfConstPtrs(fluxes[lev]), NUM_SPECIES + 1,
+      GetArrOfConstPtrs(fluxes[lev]),
+      NUM_SPECIES + 1, // This will not be used since none of rhoY/rhoH in convective
+      NUMMFVAR, AdvTypeAll_d.dataPtr(), geom[lev], -1.0,
+      fluxes_are_area_weighted);
+
+    divTmpMF.FillBoundary(geom[lev].periodicity());
+
+    // Need separate redistribution of rhoYs/rhoH
+    redistributeAofS(
+      lev, m_dt, divTmpMF, 0, advData->AofS[lev], FIRSTMFVAR, ldata_p->state,
+      FIRSTMFVAR, NUMMFVAR, bcRecSpec_d.dataPtr(), geom[lev]);
+
+    EB_set_covered(advData->AofS[lev], 0.0);
+
+#endif
 #else
     //----------------------------------------------------------------
     // Otherwise go directly into AofS
