@@ -107,8 +107,8 @@ getTransportCoeff(
       amrex::Abort("Running with Soret without light species, waste of time "
                    "and memory...");
 #endif
+    }
 #ifdef PELELM_USE_MF
-
   amrex::Real cpmix = 0.0_rt;
   eos.TY2Cp(T(i, j, k), y, cpmix);
   cpmix *= 1.0e-4_rt;
@@ -116,7 +116,6 @@ getTransportCoeff(
     rhoDi(i, j, k, NUM_SPECIES + 2 + m) = lambda(i, j, k) / cpmix;
   }
 #endif
-    }
   }
 }
 
