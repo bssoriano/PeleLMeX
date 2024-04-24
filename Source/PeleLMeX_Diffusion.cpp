@@ -151,8 +151,8 @@ PeleLM::computeDifferentialDiffusionTerms(
   auto bcRecMF = fetchBCRecArray(FIRSTMFVAR,NUMMFVAR);
   auto bcRecMF_d = convertToDeviceVector(bcRecMF);
   fluxDivergenceRD(
-    GetVecOfConstPtrs(getSpeciesVect(a_time)), 0, diffTermVec, 0,
-    GetVecOfArrOfPtrs(fluxes), 0, {}, 0, NUM_SPECIES + 2 + NUMMFVAR, intensiveFluxes,
+    GetVecOfConstPtrs(getMFVect(a_time)), 0, diffTermVec, 0,
+    GetVecOfArrOfPtrs(fluxes), 0, {}, 0, NUMMFVAR, intensiveFluxes,
     bcRecMF_d.dataPtr(), -1.0, m_dt);
 #endif
   auto bcRecTemp = fetchBCRecArray(TEMP, 1);
@@ -1549,6 +1549,7 @@ PeleLM::getScalarDiffForce(
          use_soret = m_use_soret, do_react = m_do_react, r, a, extRhoY, extRhoH,
          fY, fT, dp0dt = m_dp0dt,
          is_closed_ch =
+
            m_closed_chamber] 
 #endif
         AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
