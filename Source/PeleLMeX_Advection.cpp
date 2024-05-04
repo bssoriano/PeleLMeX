@@ -2,6 +2,7 @@
 #include <PeleLMeX_K.H>
 #include <PeleLMeX_Utils.H>
 #include <hydro_utils.H>
+#include <AMReX_PlotFileUtil.H>
 
 using namespace amrex;
 
@@ -658,6 +659,45 @@ PeleLM::computeScalarAdvTerms(std::unique_ptr<AdvanceAdvData>& advData)
         m_Godunov_ppm != 0, m_Godunov_ForceInTrans != 0, is_velocity,
         fluxes_are_area_weighted, m_advection_type, m_Godunov_ppm_limiter);
     }
+
+//     // =============== DEBUG ==================
+//     int Nlev=1;
+//     std::string outfile = "plt_debug";
+//     int nComp = 3;
+//     Vector<std::string> nnames(nComp);
+//     nnames[0] = "forcing_mf";
+//     nnames[1] = "forcing_age";
+//     nnames[2] = "forcing_T";
+//     Vector<int> isteps(Nlev, 0);
+//     Vector<IntVect> refRatios(Nlev-1,{AMREX_D_DECL(2, 2, 2)});
+
+//     Vector<MultiFab> outdata(1);      // Fab containing the processed data
+//     outdata[lev].define(grids[lev], dmap[lev], nComp, 0);
+
+// #ifdef AMREX_USE_OMP
+// #pragma omp parallel if (Gpu::notInLaunchRegion())
+// #endif
+//     for (MFIter mfi(outdata[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+
+//       Box const& bx = mfi.tilebox();
+
+//       auto const& divu_arr = divu.const_array(mfi);
+//       auto const& rhoY_arr = ldata_p->state.const_array(mfi, FIRSTMFVAR);
+//       auto const& force_arr = advData->Forcing[lev].const_array(mfi, NUM_SPECIES + 1);
+//       auto const& forceT_arr = advData->Forcing[lev].const_array(mfi, NUM_SPECIES);
+//       auto const& fout      = outdata[lev].array(mfi);
+//       amrex::ParallelFor(bx,
+//       [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
+//       {
+//          fout(i,j,k,0) = force_arr(i,j,k,0);
+//          fout(i,j,k,1) = force_arr(i,j,k,1);
+//          fout(i,j,k,2) = forceT_arr(i,j,k,0);
+//       });
+//     }
+
+//     amrex::WriteMultiLevelPlotfile(outfile, Nlev, GetVecOfConstPtrs(outdata), nnames,
+//                                    geom, 0.0, isteps, refRatios);
+//     // =============== DEBUG ==================
 
       // Get the MF edge state and advection term (do we need edge state)
 #ifdef PELELM_USE_MF

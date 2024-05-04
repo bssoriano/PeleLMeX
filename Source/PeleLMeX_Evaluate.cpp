@@ -34,6 +34,13 @@ PeleLM::Evaluate()
       for (int dvar = 0; dvar < rec->numDerive(); dvar++) {
         plt_VarsName.push_back(rec->variableName(dvar));
       }
+// #ifdef PELELM_USE_MF
+//       ncomp += NUMMFVAR;
+//     for (int m = 0; m < NUMMFVAR; m++) {
+//       std::string name = "rhoD_MixFrac" + std::to_string(m);;
+//       plt_VarsName.push_back(name);
+//     }
+// #endif
     } else if (isStateVariable(m_evaluatePlotVars[ivar])) {
       ncomp += 1;
       plt_VarsName.push_back(m_evaluatePlotVars[ivar]);
@@ -89,9 +96,9 @@ PeleLM::Evaluate()
   m_cur_time = m_dt;
 
   std::string plotfilename = "pltEvaluate";
-  amrex::WriteMultiLevelPlotfile(
-    plotfilename, finest_level + 1, GetVecOfConstPtrs(mf_plt), plt_VarsName,
-    Geom(), m_cur_time, istep, refRatio());
+  // amrex::WriteMultiLevelPlotfile(
+  //   plotfilename, finest_level + 1, GetVecOfConstPtrs(mf_plt), plt_VarsName,
+  //   Geom(), m_cur_time, istep, refRatio());
 }
 
 void
@@ -431,18 +438,18 @@ PeleLM::evaluateAdvectionTerms(
 
   // Create S^{n+1/2} by fillpatching t^{n} and t^{np1,k}
   createMACRHS(advData);
-  WriteDebugPlotFile(GetVecOfConstPtrs(advData->mac_divu), "macdivU");
+  // WriteDebugPlotFile(GetVecOfConstPtrs(advData->mac_divu), "macdivU");
 
   // Re-evaluate thermo. pressure and add chi_increment
   addChiIncrement(m_sdcIter, AmrNewTime, advData);
-  WriteDebugPlotFile(GetVecOfConstPtrs(advData->mac_divu), "macdivUwithIncr");
+  // WriteDebugPlotFile(GetVecOfConstPtrs(advData->mac_divu), "macdivUwithIncr");
 
   // MAC projection
   macProject(AmrOldTime, advData, GetVecOfPtrs(advData->mac_divu));
 
   // Get scalar advection SDC forcing
   getScalarAdvForce(advData, diffData);
-  WriteDebugPlotFile(GetVecOfConstPtrs(advData->Forcing), "advForcing");
+  // WriteDebugPlotFile(GetVecOfConstPtrs(advData->Forcing), "advForcing");
 
   // Get AofS: (\nabla \cdot (\rho Y Umac))^{n+1/2,k}
   // and for density = \sum_k AofS_k

@@ -81,7 +81,8 @@ PeleLM::computeDifferentialDiffusionTerms(
 #ifdef PELELM_USE_MF
       fluxes[lev][idim].define(
         amrex::convert(ba, IntVect::TheDimensionVector(idim)), dmap[lev],
-        NUM_SPECIES + 2 + NUMMFVAR, nGrow, MFInfo(), factory);
+        NVAR, nGrow, MFInfo(), factory);
+        // NUM_SPECIES + 2 + NUMMFVAR, nGrow, MFInfo(), factory);
 #else
       fluxes[lev][idim].define(
         amrex::convert(ba, IntVect::TheDimensionVector(idim)), dmap[lev],
@@ -150,10 +151,13 @@ PeleLM::computeDifferentialDiffusionTerms(
 #ifdef PELELM_USE_MF
   auto bcRecMF = fetchBCRecArray(FIRSTMFVAR,NUMMFVAR);
   auto bcRecMF_d = convertToDeviceVector(bcRecMF);
+
+
   fluxDivergenceRD(
     GetVecOfConstPtrs(getMFVect(a_time)), 0, diffTermVec, 0,
     GetVecOfArrOfPtrs(fluxes), 0, {}, 0, NUMMFVAR, intensiveFluxes,
     bcRecMF_d.dataPtr(), -1.0, m_dt);
+
 #endif
   auto bcRecTemp = fetchBCRecArray(TEMP, 1);
   auto bcRecTemp_d = convertToDeviceVector(bcRecTemp);
@@ -358,6 +362,45 @@ PeleLM::computeDifferentialDiffusionFluxes(
   }
 
 #ifdef PELELM_USE_MF
+
+//     // =============== DEBUG ==================
+//     int Nlev=1;
+//     std::string outfile = "plt_debug_diffusion";
+//     int nComp = 1;
+//     Vector<std::string> nnames(nComp);
+//     nnames[0] = "fluxX";
+//     // nnames[1] = "fluxX_age";
+//     // nnames[2] = "forcing_T";
+//     Vector<int> isteps(Nlev, 0);
+//     Vector<IntVect> refRatios(Nlev-1,{AMREX_D_DECL(2, 2, 2)});
+
+//     Vector<MultiFab> outdata(1);      // Fab containing the processed data
+//     outdata[0].define(grids[0], dmap[0], nComp, 0);
+
+// #ifdef AMREX_USE_OMP
+// #pragma omp parallel if (Gpu::notInLaunchRegion())
+// #endif
+//     for (MFIter mfi(outdata[0],TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+
+//       Box const& bx = mfi.tilebox();
+
+//       auto const& fluxX = a_fluxes->const_array(mfi, NUM_SPECIES);
+//       auto const& fout  = outdata[0].array(mfi);
+      
+//       amrex::ParallelFor(bx,
+//       [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
+//       {
+//          fout(i,j,k,0) = fluxX(i,j,k);
+//          // fout(i,j,k,1) = fluxX(i,j,k,1);
+//       });
+//     }
+
+//     amrex::WriteMultiLevelPlotfile(outfile, Nlev, GetVecOfConstPtrs(outdata), nnames,
+//                                    geom, 0.0, isteps, refRatios);
+//     amrex::Print() << "Finished writing plt_debug_diffusion" << std::endl;
+
+//     // =============== DEBUG END ==================
+    
   auto bcRecMF = fetchBCRecArray(FIRSTMFVAR,NUMMFVAR);
 
   //martin: not sure here
