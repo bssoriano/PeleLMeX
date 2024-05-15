@@ -135,6 +135,7 @@ PeleLM::AdvanceDiffData::AdvanceDiffData(
 #ifdef PELELM_USE_MF
       Dn[lev].define(
         ba[lev], dm[lev], NUM_SPECIES + 2 + NUMMFVAR, nGrowAdv, MFInfo(), *factory[lev]);
+      Dn[lev].setVal(0.0);
       Dnp1[lev].define(
         ba[lev], dm[lev], NUM_SPECIES + 2 + NUMMFVAR, nGrowAdv, MFInfo(), *factory[lev]);
       Dhat[lev].define(
