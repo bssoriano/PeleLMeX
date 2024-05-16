@@ -261,6 +261,10 @@ PeleLM::SprayAddSource(const int level)
       scomps.specIndx + SprayParticleContainer::getFuelIndx(n);
     MultiFab::Add(
       extsource, source, scomps.specSrcIndx + n, dstcomp, 1, eghosts);
+#ifdef PELELM_USE_MF
+    MultiFab::Add(
+      extsource, source, scomps.specSrcIndx + n, FIRSTMFVAR+n, 1, eghosts);
+#endif
   }
 }
 
