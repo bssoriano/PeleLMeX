@@ -718,7 +718,7 @@ PeleLM::computeScalarAdvTerms(std::unique_ptr<AdvanceAdvData>& advData)
                    auto const& edgez = edgeState[2].array(mfi, NUM_SPECIES + 3);) //martin: not sure here
       auto const& divu_arr = divu.const_array(mfi);
       auto const& rhoY_arr = ldata_p->state.const_array(mfi, FIRSTMFVAR);
-      auto const& force_arr = advData->Forcing[lev].const_array(mfi, NUM_SPECIES + 1);
+      auto const& force_arr = advData->Forcing[lev].const_array(mfi, NUM_SPECIES + NUMSOOTVAR + 1);
 
       bool is_velocity = false;
       bool fluxes_are_area_weighted = false;
