@@ -1,0 +1,46 @@
+# AMReX
+DIM = 3
+COMP = gnu
+PRECISION = DOUBLE
+USE_EB = FALSE
+USE_HYPRE = FALSE
+
+# Profiling
+PROFILE = FALSE
+TINY_PROFILE = TRUE
+COMM_PROFILE = FALSE
+TRACE_PROFILE = FALSE
+MEM_PROFILE = FALSE
+USE_GPROF = FALSE
+
+# Performance
+USE_MPI = TRUE
+USE_OMP = FALSE
+USE_CUDA = FALSE
+USE_HIP = FALSE
+USE_SYCL = FALSE
+
+# Debugging
+DEBUG = FALSE
+FSANITIZER = FALSE
+THREAD_SANITIZER = FALSE
+
+# PeleLMeX
+USE_EFIELD = FALSE
+
+USE_SOOT = FALSE
+NUM_SOOT_MOMENTS = 3
+USE_RADIATION = FALSE
+
+USE_MF          = TRUE
+NUM_MF          = 3
+USE_AGE         = TRUE
+
+# PelePhysics
+# Chemistry_Model = drm19
+Chemistry_Model = SootReaction
+Eos_Model = Fuego
+Transport_Model = Simple
+
+PELE_HOME ?= /home/bsouzas/my_LMeX/PeleLMeX/
+include $(PELE_HOME)/Exec/Make.PeleLMeX
