@@ -804,7 +804,7 @@ buildAdvectionForcing(
 
 #ifdef PELELM_USE_MF
   for (int m = 0; m < NUMMFVAR; m++) {
-    forceMF(i, j, k, m) = dn(i, j, k, FIRSTMFVAR + m);
+    forceMF(i, j, k, m) = dn(i, j, k, NUM_SPECIES + 2 + m);
   }
   //#ifdef PELELM_USE_AGE
   //forceMF(i,j,k,NUMMFVAR-1) += r(i,j,k,NUM_SPECIES);
