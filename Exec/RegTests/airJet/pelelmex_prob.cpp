@@ -34,8 +34,9 @@ void PeleLM::readProbParm()
        prob_parm->Y_fuel[n] = prob_parm->Y_ox[n];
    }
 
-   CKHBMS(prob_parm->T_fu, prob_parm->Y_fuel, prob_parm->H_fuel);
-   CKHBMS(prob_parm->T_ox, prob_parm->Y_ox,   prob_parm->H_ox);
+   auto eos = pele::physics::PhysicsType::eos();
+   eos.TY2H(prob_parm->T_fu, prob_parm->Y_fuel, prob_parm->H_fuel);
+   eos.TY2H(prob_parm->T_ox, prob_parm->Y_ox,   prob_parm->H_ox);
 
    auto problo = geom[0].ProbLo();
    auto probhi = geom[0].ProbHi();
