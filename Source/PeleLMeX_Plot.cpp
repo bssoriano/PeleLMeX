@@ -947,6 +947,7 @@ PeleLM::initLevelDataFromPlt(int a_lev, const std::string& a_dataPltFile)
 
   ProbParm const* lprobparm = prob_parm_d;
 
+
   // Enforce rho and rhoH consistent with temperature and mixture
   // The above handles species mapping (to some extent), but nothing enforce
   // sum of Ys = 1 -> use N2 in the following if N2 is present
@@ -959,10 +960,63 @@ PeleLM::initLevelDataFromPlt(int a_lev, const std::string& a_dataPltFile)
     auto const& rhoY_arr = ldata_p->state.array(mfi, FIRSTSPEC);
     auto const& rhoH_arr = ldata_p->state.array(mfi, RHOH);
     auto const& temp_arr = ldata_p->state.array(mfi, TEMP);
+    const amrex::Real* prob_lo = geom[a_lev].ProbLo();
+    const amrex::Real* dx      = geom[a_lev].CellSize();
     amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
       auto eos = pele::physics::PhysicsType::eos();
       Real massfrac[NUM_SPECIES] = {0.0};
       Real sumYs = 0.0;
+     
+      amrex::Real x = prob_lo[0] + (i+0.5)*dx[0];
+      amrex::Real y = prob_lo[1] + (j+0.5)*dx[1];
+      amrex::Real z = prob_lo[2] + (k+0.5)*dx[2];
+      
+      // amrex::Real r = sqrt(pow((0.0-x),2)+pow((0.0-y),2)+pow((5.0e-3-z),2));
+
+    amrex::Real Do_swirler = 0.0;
+    amrex::Real Di_swirler = 0.0;
+
+    amrex::Real Ro_swirler = Do_swirler/2;
+    amrex::Real Ri_swirler = Di_swirler/2;
+    amrex::Real R = Ri_swirler/Ro_swirler;
+    amrex::Real x0 = 0.0;
+    amrex::Real y0 = 0.0;
+    amrex::Real H = 0.01;
+    amrex::Real D_coflow = Do_swirler;
+
+    amrex::Real cut_off_height = 0.04;
+
+    amrex::Real jet_1 = 0.5*(1-((std::tanh((std::sqrt(std::pow(x-x0,2)+std::pow(y-y0,2))-(Do_swirler/2))/(H))))*(tanh((std::sqrt(std::pow(x-x0,2)+std::pow(y-y0,2))+(Do_swirler/2))/(H))));
+
+    amrex::Real jet_2 = 0.5*(1-std::tanh((z-cut_off_height)/H));
+
+    amrex::Real jet_total = jet_1 * jet_2;    
+
+     temp_arr(i, j, k) = (3500.*jet_total) + ((1-jet_total)*(388.));
+//     rhoY_arr(i, j, k, N2_ID)  = (0.72*jet_total) + ((1-jet_total)*(rhoY_arr(i, j, k, N2_ID)));
+//     rhoY_arr(i, j, k, CO2_ID) = (0.1451*jet_total) + ((1-jet_total)*(rhoY_arr(i, j, k, CO2_ID)));
+//     rhoY_arr(i, j, k, H2O_ID) = (0.0695*jet_total) + ((1-jet_total)*(rhoY_arr(i, j, k, H2O_ID)));
+
+//     if(temp_arr(i, j, k) > 2300.){
+//         temp_arr(i, j, k) = 2300.;
+//     }
+
+     if(z < 0.0){
+	//jet_total = 0.0;
+	temp_arr(i, j, k) = 388.;
+     }
+//     rhoY_arr(i, j, k, N2_ID)        = (0.3000*jet_total) + ((1-jet_total)*0.767);
+//     rhoY_arr(i, j, k, O2_ID)        = (0.0930*jet_total) + ((1-jet_total)*0.233);
+//     rhoY_arr(i, j, k, POSF10325_ID) = (0.5999*jet_total) + ((1-jet_total)*0.000);
+
+//      }
+//      if(r < 5.e-3){
+//         temp_arr(i, j, k) = 2200.;
+//         rhoY_arr(i, j, k, N2_ID)  = 0.72;
+//         rhoY_arr(i, j, k, CO2_ID) = 0.1451;
+//         rhoY_arr(i, j, k, H2O_ID) = 0.0695;
+//      }
+
       for (int n = 0; n < NUM_SPECIES; n++) {
         massfrac[n] = rhoY_arr(i, j, k, n);
 #ifdef N2_ID
@@ -974,6 +1028,7 @@ PeleLM::initLevelDataFromPlt(int a_lev, const std::string& a_dataPltFile)
 #ifdef N2_ID
       massfrac[N2_ID] = 1.0 - sumYs;
 #endif
+
 
       // Get density
       Real P_cgs = lprobparm->P_mean * 10.0;
