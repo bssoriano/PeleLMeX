@@ -81,8 +81,7 @@ PeleLM::computeDifferentialDiffusionTerms(
 #ifdef PELELM_USE_MF
       fluxes[lev][idim].define(
         amrex::convert(ba, IntVect::TheDimensionVector(idim)), dmap[lev],
-        NVAR, nGrow, MFInfo(), factory);
-        // NUM_SPECIES + 2 + NUMMFVAR, nGrow, MFInfo(), factory);
+        NUM_SPECIES + 2 + NUMMFVAR, nGrow, MFInfo(), factory);
 #else
       fluxes[lev][idim].define(
         amrex::convert(ba, IntVect::TheDimensionVector(idim)), dmap[lev],
@@ -148,17 +147,16 @@ PeleLM::computeDifferentialDiffusionTerms(
     GetVecOfConstPtrs(getSpeciesVect(a_time)), 0, diffTermVec, 0,
     GetVecOfArrOfPtrs(fluxes), 0, {}, 0, NUM_SPECIES, intensiveFluxes,
     bcRecSpec_d.dataPtr(), -1.0, m_dt);
+
 #ifdef PELELM_USE_MF
   auto bcRecMF = fetchBCRecArray(FIRSTMFVAR,NUMMFVAR);
   auto bcRecMF_d = convertToDeviceVector(bcRecMF);
-
-
   fluxDivergenceRD(
-    GetVecOfConstPtrs(getMFVect(a_time)), 0, diffTermVec, 0,
-    GetVecOfArrOfPtrs(fluxes), 0, {}, 0, NUMMFVAR, intensiveFluxes,
+    GetVecOfConstPtrs(getMFVect(a_time)), 0, diffTermVec, NUM_SPECIES + 2,
+    GetVecOfArrOfPtrs(fluxes), NUM_SPECIES + 2, {}, 0, NUMMFVAR, intensiveFluxes,
     bcRecMF_d.dataPtr(), -1.0, m_dt);
-
 #endif
+
   auto bcRecTemp = fetchBCRecArray(TEMP, 1);
   auto bcRecTemp_d = convertToDeviceVector(bcRecTemp);
   Vector<MultiFab*> EBFluxesVec =

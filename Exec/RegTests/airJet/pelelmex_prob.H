@@ -33,7 +33,7 @@ pelelmex_initdata (int i, int j, int k,
     AMREX_D_TERM(const amrex::Real Lxm = .5*(prob_hi[0] + prob_lo[0]);
 		 , const amrex::Real Lym = .5*(prob_hi[1] + prob_lo[1]);
 		 , const amrex::Real Lzm = .5*(prob_hi[2] + prob_lo[2]));
-    
+
     amrex::Real x[3] = {
       prob_lo[0] + static_cast<amrex::Real>(i + 0.5) * dx[0],
       prob_lo[1] + static_cast<amrex::Real>(j + 0.5) * dx[1],
@@ -43,22 +43,17 @@ pelelmex_initdata (int i, int j, int k,
     amrex::Real eta = 0.5*(1.0 - std::tanh(2.0*(radius-prob_parm.D*0.5)/(0.3*prob_parm.D*0.5)));
 
     amrex::Real enthalpy_cgs = (1.0-eta) * prob_parm.H_fuel + eta*prob_parm.H_ox;
-    if(radius < prob_parm.D*0.5){
-       enthalpy_cgs = prob_parm.H_ox;
-    }
-    else{
-       enthalpy_cgs = prob_parm.H_fuel;
-    }
-    
+
     for (int n = 0; n < NUM_SPECIES; n++)
     {
         massfrac[n] = prob_parm.Y_ox[n];
     }
 
-    amrex::Real T;
+    amrex::Real T = 300.0;
     eos.HY2T(enthalpy_cgs, massfrac, T);
+    if( std::isnan(T)) {amrex::Abort("T is nan");}
     state(i,j,k,TEMP) = T;
-    
+
     state(i,j,k,VELX) = 0.1;
     state(i,j,k,VELY) = 0.0;
     state(i,j,k,VELZ) = 0.0;
@@ -77,13 +72,13 @@ pelelmex_initdata (int i, int j, int k,
 
 #ifdef PELELM_USE_MF
     if(radius < prob_parm.D*0.5){
-       state(i,j,k,FIRSTMFVAR) = state(i,j,k,DENSITY); 
+       state(i,j,k,FIRSTMFVAR) = state(i,j,k,DENSITY);
     }
     else{
-       state(i,j,k,FIRSTMFVAR) = 0.0; 
+       state(i,j,k,FIRSTMFVAR) = 0.0;
     }
-    state(i,j,k,FIRSTMFVAR) = eta * state(i,j,k,DENSITY); 
-    state(i,j,k,FIRSTMFVAR+1) = 0.; 
+    state(i,j,k,FIRSTMFVAR) = eta * state(i,j,k,DENSITY);
+    state(i,j,k,FIRSTMFVAR+1) = 0.;
     state(i,j,k,FIRSTMFVAR+2) = 0.;
 #endif
 }
@@ -132,14 +127,15 @@ bcnormal(
     s_ext[VELX] = 0.0;
     s_ext[VELY] = 0.0;
     s_ext[VELZ] = eta*prob_parm.v_in;
-    
+
     for (int n = 0; n < NUM_SPECIES; n++)
     {
       massfrac[n] = prob_parm.Y_ox[n];
     }
     enthalpy = (1.-eta) * prob_parm.H_fuel + eta*prob_parm.H_ox;
 
-    GET_T_GIVEN_HY(enthalpy,massfrac,s_ext[TEMP],ierr);
+    s_ext[TEMP] = 300.0;
+    eos.HY2T(enthalpy,massfrac,s_ext[TEMP]);
 
     amrex::Real rho_cgs, P_cgs, RhoH_temp;
     P_cgs = prob_parm.P_mean * 10.0;
