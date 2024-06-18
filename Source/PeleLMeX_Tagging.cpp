@@ -110,7 +110,7 @@ PeleLM::ErrorEst(int lev, TagBoxArray& tags, Real time, int /*ng*/)
               const amrex::Real z = prob_lo2 + (k+0.5)*dx2;
               const amrex::Real r = sqrt(pow((0.0-x),2)+pow((0.0-y),2));
 
-              if (z > MaxZdir_refine and r < 20.e-3) {
+              if (z > MaxZdir_refine) {
                   tag(i,j,k) = TagBox::CLEAR;
               }
           });
