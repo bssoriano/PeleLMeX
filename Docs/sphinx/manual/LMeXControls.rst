@@ -36,6 +36,15 @@ Computational domain definition
     peleLM.lo_bc = Interior Interior Inflow
     peleLM.hi_bc = Interior Interior Inflow
 
+If specifying boundaries as ``Inflow``, the bcnormal function must be defined
+in the ``pelelmex_prob.H`` file for the case to define the inflow conditions.
+``Inflow`` boundaries may also be augmented with spatially and temporally
+varying turbulent fluctuations using the ``TurbInflow`` utility from
+PelePhysics. See the ``Exec/RegTests/TurbInflow`` test for an example of how
+to use this capability and the
+`PelePhysics  documentation <https://amrex-combustion.github.io/PelePhysics/Utility.html#turbulent-inflows>`_
+for the relevant input file flags.
+
 Grid/AMR parameters
 -------------------
 
@@ -113,7 +122,8 @@ IO parameters
     amr.restart          = chk00100        # [OPT, DEF=""] Checkpoint from which to restart the simulation
     amr.initDataPlt      = plt01000        # [OPT, DEF=""] Provide a plotfile from which to extract initial data
     amr.regrid_on_restart = 1              # [OPT, DEF="0"] Trigger a regrid after the data from checkpoint are loaded
-
+    amr.n_files          = 64              # [OPT, DEF="min(256,NProcs)"] Number of files to write per level
+    
 Refinement controls
 -------------------
 
@@ -238,7 +248,7 @@ PeleLMeX algorithm
     peleLM.gravity = 0.0 0.0 -9.81         # [OPT, DEF=Vec{0.0}] Gravity vector [MKS]
     peleLM.gradP0 = 0.0 0.0 10.0           # [OPT, DEF=Vec{0.0}] Average background pressure gradient [Pa/m]
     peleLM.do_periodic_channel = 0         # [OPT, DEF= 0] Add an automatic pressure gradient to maintain initial condition mass flow rate in periodic channel
-    peleLM.periodic_channel_dir = 2        # [OPT, DEF= -1] Required if do_periodic_channel != 0. Direction to apply pressure gradient.    
+    peleLM.periodic_channel_dir = 2        # [OPT, DEF= -1] Required if do_periodic_channel != 0. Direction to apply pressure gradient.
     peleLM.closed_chamber = 0              # [OPT] Override the automatic detection of closed chamber (based on Outflow(s))
     peleLM.floor_species = 0               # [OPT, DEF=0] Crudely enforce mass fraction positivity
     peleLM.deltaT_verbose = 0              # [OPT, DEF=0] Verbose of the deltaT iterative solve algorithm
@@ -246,8 +256,8 @@ PeleLMeX algorithm
     peleLM.deltaT_tol = 1e-10              # [OPT, DEF=1.e-10] Tolerance of the deltaT solve
     peleLM.evaluate_vars =...              # [OPT, DEF=""] In evaluate mode, list unitTest: diffTerm, divU, instRR, transportCC
 
-Transport coeffs and LES
-------------------------
+Transport coefficients and LES
+------------------------------
 
 ::
 
@@ -257,7 +267,7 @@ Transport coeffs and LES
     peleLM.Prandtl = 0.7                   # [OPT, DEF=0.7] If fixed_Pr or doing LES, specifies the Prandtl number
     peleLM.Schmidt = 0.7                   # [OPT, DEF=0.7] If doing LES, specifies the Schmidt number
     peleLM.Lewis = 1.0                     # [OPT, DEF=1.0] If fixed_Le, specifies the Lewis number
-    
+
     peleLM.les_model = "None"              # [OPT, DEF="None"] Model to compute turbulent viscosity: None, Smagorinsky, WALE, Sigma
     peleLM.les_cs_smag = 0.18              # [OPT, DEF=0.18] If using Smagorinsky LES model, provides model coefficient
     peleLM.les_cm_wale = 0.60              # [OPT, DEF=0.60] If using WALE LES model, provides model coefficient
@@ -279,8 +289,11 @@ Chemistry integrator
     cvode.solve_type = denseAJ_direct           # [OPT, DEF=GMRES] Linear solver employed for CVODE Newton direction
     cvode.max_order  = 4                        # [OPT, DEF=2] Maximum order of the BDF method in CVODE
     cvode.max_substeps = 10000                  # [OPT, DEF=10000] Maximum number of substeps for the linear solver in CVODE
-    
+
 Note that the last five parameters belong to the Reactor class of PelePhysics but are specified here for completeness. In particular, CVODE is the adequate choice of integrator to tackle PeleLMeX large time step sizes. Several linear solvers are available depending on whether or not GPU are employed: on CPU, `dense_direct` is a finite-difference direct solver, `denseAJ_direct` is an analytical-jacobian direct solver (preferred choice), `sparse_direct` is an analytical-jacobian sparse direct solver based on the KLU library and `GMRES` is a matrix-free iterative solver; on GPU `GMRES` is a matrix-free iterative solver (available on all the platforms), `sparse_direct` is a batched block-sparse direct solve based on NVIDIA's cuSparse (only with CUDA), `magma_direct` is a batched block-dense direct solve based on the MAGMA library (available with CUDA and HIP. Different `cvode.solve_type` should be tried before increasing the `cvode.max_substeps`.
+
+.. note::
+   The default chemistry integrator is 'ReactorNull' which do not include the chemical source terms.
 
 Embedded Geometry
 -----------------
@@ -328,6 +341,27 @@ EB-level to level 1 (must be below `amr.max_level`) and a derefinement strategy 
 that fine-grid patches do not cross the EB boundary. The last parameter set a safety margin to increase
 how far the derefinement is applied in order to account for grid-patches diagonals and proper nesting constrains.
 Note that the parameter do not ensure explicitly coarse-fine/EB crossings are avoided and the code will fail when this happens.
+
+AMReX generates the EB at the finest level (specified by `amr.max_level`) and subsequently coarsen the resulting
+EB data to coarser AMR levels (as well as multigrid levels) in order to ensure consistency across levels. As a consequence,
+increasing `amr.max_level` during the course of a simulation can lead in small changes to the EB, potentially uncovering
+previously covered regions for which the solver cannot provide initial conditions upon restart. It is thus advised to
+set `amr.max_level` to the desired maximum level you ever plan to use in the simulation, and limit the level at which
+the EB is refined (with `peleLM.refine_EB_max_level`) and refinement criteria are applied (with `amr.*****.max_level`)
+to a lower value while starting the simulation. A side effect of this process is that the generation of the EB can
+be excessively long if `amr.max_level` is large. To speed up the EB generation, one can use the following keys:
+
+::
+
+    eb2.num_coarsen_opt = 3
+    eb2.max_grid_size = 64
+
+Setting `eb2.num_coarsen_opt = 3` effectively speed the EB generation by coarsening the level at which the recursive EB intersection
+algorithm starts by a factor 2^3. A large value of this parameter can lead to an erroneous EB representation, missing small features,
+and should thus be kept at or below 4. The EB intersection algorithm relies on chopping the domain into boxes and finding those
+fully or partially covered. The size of these boxes can be controlled with `eb2.max_grid_size`, and can be adjusted to better
+match the number of MPI ranks used in the simulation.
+
 
 It is also possible to change the default adiabatic EB wall condition to an isothermal EB. To do so, one need to switch the following
 flag:
@@ -416,6 +450,44 @@ to activate `temporal` diagnostics performing these reductions at given interval
     peleLM.do_extremas = 1                      # [OPT, DEF=0] Trigger extremas, if temporals activated
     peleLM.do_mass_balance = 1                  # [OPT, DEF=0] Compute mass balance, if temporals activated
     peleLM.do_species_balance = 1               # [OPT, DEF=0] Compute species mass balance, if temporals activated
+    peleLM.do_patch_mfr=1                       # [OPT, DEF=0] Activate patch based species flux diagbostics
+    peleLM.bpatch.patchnames= <patch_name1 patch_name2 ..> # List of patchnames
+    
+    bpatch.patch_name1.patchtype=full-boundary             # patchtype one of "full-boundary", "circle, "rectangle", "circle-annular" or "rectangle-annular"	 
+    bpatch.patch_name1.boundary_direction=2                # patch normal direction 
+    bpatch.patch_name1.boundary_lo_or_hi=0                 # patch in low or high side of boundary    
+    bpatch.patch_name1.species= O2 N2                      # list of species names
+    
+    bpatch.patch_name2.patchtype=circle                    # patchtype one of "full-boundary", "circle, "rectangle", "circle-annular" or "rectangle-annular"	 
+    bpatch.patch_name2.boundary_direction=2                # patch normal direction 
+    bpatch.patch_name2.boundary_lo_or_hi=0                 # patch in low or high side of boundary   
+    bpatch.patch_name2.patch_circle_radius=0.1             # radius of the patch
+    bpatch.patch_name2.patch_circle_center=0.0 0.0 0.0     # coordinates of patch center 
+    bpatch.patch_name2.species= O2 N2                      # list of species names
+    
+    bpatch.patch_name3.patchtype=rectangle      	 
+    bpatch.patch_name3.boundary_direction=2                # patch normal direction 
+    bpatch.patch_name3.boundary_lo_or_hi=0                 # patch in low or high side of boundary   
+    bpatch.patch_name3.patch_rectangle_lo=0.0 0.0 0.0      # coordinates of low corner of rectangle
+    bpatch.patch_name3.patch_rectangle_hi=1.0 1.0 1.0      # coordinates of high corner of rectangle
+    bpatch.patch_name3.species= O2 N2                      # list of species names
+    
+    bpatch.patch_name4.patchtype=circle-annular  	 
+    bpatch.patch_name4.boundary_direction=2                # patch normal direction 
+    bpatch.patch_name4.boundary_lo_or_hi=0                 # patch in low or high side of boundary   
+    bpatch.patch_name4.patch_circ_ann_center= 0.0 0.0 0.0  # center of annular circle
+    bpatch.patch_name4.patch_circ_ann_inner_radius=0.1     # coordinates of patch center
+    bpatch.patch_name4.patch_circ_ann_outer_radius=0.2     # coordinates of patch center 
+    bpatch.patch_name4.species= O2 N2                      # list of species names
+    
+    bpatch.patch_name5.patchtype=rectangle-annular         
+    bpatch.patch_name5.boundary_direction=2                     # patch normal direction 
+    bpatch.patch_name5.boundary_lo_or_hi=0                      # patch in low or high side of boundary   
+    bpatch.patch_name5.patch_rect_ann_outer_lo = -1.0 -1.0 -1.0 # coordinates of low corner of outer rectangle 
+    bpatch.patch_name5.patch_rect_ann_outer_hi =  1.0  1.0  1.0 # coordinates of high corner of outer rectangle  
+    bpatch.patch_name5.patch_rect_ann_inner_lo = -0.5 -0.5 -0.5 # coordinates of low corner of inner rectangle 
+    bpatch.patch_name5.patch_rect_ann_inner_hi =  0.5  0.5  0.5 # coordinates of high corner of inner rectangle 
+    bpatch.patch_name5.species= O2 N2                           # list of species names
 
 The `do_temporal` flag will trigger the creation of a `temporals` folder in your run directory and the following entries
 will be appended to an ASCII `temporals/tempState` file: step, time, dt, kin. energy integral, enstrophy integral, mean pressure
@@ -424,6 +496,10 @@ turn on state extremas (stored in `temporals/tempExtremas` as min/max for each s
 `temporals/tempMass`) computing the total mass, dMdt and advective mass fluxes across the domain boundaries as well as the error in
 the balance (dMdt - sum of fluxes), and species balance (stored in `temporals/tempSpec`) computing each species total mass, dM_Ydt,
 advective \& diffusive fluxes across the domain boundaries, consumption rate integral and the error (dMdt - sum of fluxes - reaction).
+Users can also monitor species advective fluxes through specific regions of the domain boundaries (called as boundary patches).
+Patches can be defined on the low or high sides of non-embedded boundaries through the use of pre-defined shapes such as `circle`,
+`rectangle`,`circle-annular`, `rectangle-annular` and `full-boundary`. The zero AMR level, advective fluxes of each of the user-specified species will be 
+reported in the ASCII `temppatchmfr` file in the temporals folder. 
 
 Combustion diagnostics often involve the use of a mixture fraction and/or a progress variable, both of which can be defined
 at run time and added to the derived variables included in the plotfile. If `mixture_fraction` or `progress_variable` is
@@ -476,6 +552,7 @@ fine-covered regions are masked. The following provide examples for each diagnos
     peleLM.xnormP.int    = 5                                        # Frequency (as step #) for performing the diagnostic
     peleLM.xnormP.interpolation = Linear                            # [OPT, DEF=Linear] Interpolation type : Linear or Quadratic
     peleLM.xnormP.field_names = x_velocity mag_vort density         # List of variables outputted to the 2D pltfile
+    peleLM.xnormP.n_files = 2                                       # [OPT, DEF="min(256,NProcs)"] Number of files to write per level
 
     peleLM.condT.type = DiagConditional                             # Diagnostic type
     peleLM.condT.file = condTest                                    # Output file prefix

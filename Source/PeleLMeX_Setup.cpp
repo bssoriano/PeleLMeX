@@ -1,6 +1,7 @@
 #include <PeleLMeX.H>
 #include <AMReX_ParmParse.H>
 #include <PeleLMeX_DeriveFunc.H>
+#include <PeleLMeX_BPatch.H>
 #include "PelePhysics.H"
 #include <AMReX_buildInfo.H>
 #ifdef PELE_USE_EFIELD
@@ -44,8 +45,10 @@ PeleLM::Setup()
   // Ensure grid is isotropic
   {
     auto const dx = geom[0].CellSizeArray();
+    amrex::Print() << "\n Dx = " << dx[0] << " " << dx[1] << " " << dx[2];
     AMREX_ALWAYS_ASSERT(AMREX_D_TERM(
-      , amrex::almostEqual(dx[0], dx[1]), &&amrex::almostEqual(dx[1], dx[2])));
+      , amrex::almostEqual(dx[0], dx[1], 10),
+      &&amrex::almostEqual(dx[1], dx[2], 10)));
   }
   // Print build info to screen
   const char* githash1 = buildInfoGetGitHash(1);
@@ -93,13 +96,18 @@ PeleLM::Setup()
   // Diagnostics setup
   createDiagnostics();
 
+  // Boundary Patch Setup
+  if (m_do_patch_mfr != 0) {
+    initBPatches(Geom(0));
+  }
+
   // Initialize Level Hierarchy data
   resizeArray();
 
   // Initialize EOS and others
   if (m_incompressible == 0) {
     amrex::Print() << " Initialization of Transport ... \n";
-    trans_parms.allocate();
+    trans_parms.initialize();
     if ((m_les_verbose != 0) and m_do_les) { // Say what transport model we're
                                              // going to use
       amrex::Print() << "    Using LES in transport with Sc = "
@@ -540,6 +548,7 @@ PeleLM::readParameters()
     pp.query("do_extremas", m_do_extremas);
     pp.query("do_mass_balance", m_do_massBalance);
     pp.query("do_species_balance", m_do_speciesBalance);
+    pp.query("do_patch_mfr", m_do_patch_mfr);
   }
 
   // -----------------------------------------
@@ -557,6 +566,8 @@ PeleLM::readParameters()
   ppa.query("dt_change_max", m_dtChangeMax);
   ppa.query("max_dt", m_max_dt);
   ppa.query("min_dt", m_min_dt);
+  m_nfiles = std::max(1, std::min(ParallelDescriptor::NProcs(), 256));
+  ppa.query("n_files", m_nfiles);
 
   if (max_level > 0 || (m_doLoadBalance != 0)) {
     ppa.query("regrid_int", m_regrid_int);
