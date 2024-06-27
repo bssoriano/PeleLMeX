@@ -607,8 +607,7 @@ PeleLM::fillpatch_mf(
   int nGhost)
 {
   ProbParm const* lprobparm = prob_parm_d;
-  pele::physics::PMF::PmfData::DataContainer const* lpmfdata =
-    pmf_data.getDeviceData();
+  auto const* lpmfdata = pmf_data.device_parm();
   if (lev == 0) {
     // MF
     PhysBCFunct<GpuBndryFuncFab<PeleLMCCFillExtDirMF>> bndry_func(
