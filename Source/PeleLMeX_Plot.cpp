@@ -70,6 +70,8 @@ PeleLM::WritePlotFile()
     amrex::Print() << "\n Writing plotfile: " << plotfilename << "\n";
   }
 
+  VisMF::SetNOutFiles(m_nfiles);
+
   //----------------------------------------------------------------
   // Average down the state
   averageDownState(AmrNewTime);
@@ -533,6 +535,8 @@ PeleLM::WriteCheckPointFile()
   if (m_verbose != 0) {
     amrex::Print() << "\n Writing checkpoint file: " << checkpointname << "\n";
   }
+
+  VisMF::SetNOutFiles(m_nfiles);
 
   amrex::PreBuildDirectorHierarchy(
     checkpointname, level_prefix, finest_level + 1, true);

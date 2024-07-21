@@ -9,6 +9,8 @@
 #include "PeleLMeX_DiffusionOp.H"
 #include "DiagBase.H"
 #include "PeleLMeX_FlowControllerData.H"
+#include "PeleLMeX_BPatch.H"
+
 #ifdef PELE_USE_EFIELD
 #include "PrecondOp.H"
 #endif
@@ -44,6 +46,8 @@ class SprayParticleContainer;
 #ifdef PELE_USE_SOOT
 class SootModel;
 #endif
+
+class BPatch;
 
 const std::string PrettyLine = " " + std::string(78, '=') + "\n";
 
@@ -977,6 +981,9 @@ public:
   // Temporal
   void massBalance();
   void speciesBalance();
+  void speciesBalancePatch();
+  void initBPatches(amrex::Geometry& a_geom);
+
   void rhoHBalance();
   void initTemporals(const PeleLM::TimeStamp& a_time = AmrOldTime);
   void writeTemporals();
@@ -987,6 +994,10 @@ public:
     const amrex::Array<const amrex::MultiFab*, AMREX_SPACEDIM>& a_fluxes,
     const amrex::Geometry& a_geom);
   void addRhoYFluxes(
+    const amrex::Array<const amrex::MultiFab*, AMREX_SPACEDIM>& a_fluxes,
+    const amrex::Geometry& a_geom,
+    const amrex::Real& a_factor = 1.0);
+  void addRhoYFluxesPatch(
     const amrex::Array<const amrex::MultiFab*, AMREX_SPACEDIM>& a_fluxes,
     const amrex::Geometry& a_geom,
     const amrex::Real& a_factor = 1.0);
@@ -1690,6 +1701,10 @@ public:
   ProbParm* prob_parm = nullptr;
   ProbParm* prob_parm_d = nullptr;
 
+  // Patch parameters
+  BPatch* boundary_patches = nullptr;
+  BPatch* boundary_patches_d = nullptr;
+
 #ifdef PELE_USE_SOOT
   // Soot parameters
   SootModel* soot_model = nullptr;
@@ -1732,11 +1747,13 @@ public:
   amrex::Vector<amrex::Real> m_ctrl_cntl_pts;
 
   // PMF parameters
-  pele::physics::PMF::PmfData pmf_data;
+  pele::physics::PeleParams<pele::physics::PMF::PmfData::DataContainer>
+    pmf_data;
 
   // Transport pointer
-  static pele::physics::transport::TransportParams<
-    pele::physics::PhysicsType::transport_type>
+  static pele::physics::PeleParams<pele::physics::transport::TransParm<
+    pele::physics::PhysicsType::eos_type,
+    pele::physics::PhysicsType::transport_type>>
     trans_parms;
 
   // Reactor pointer
@@ -1795,6 +1812,7 @@ public:
   amrex::Real m_max_wall_time = -1.0;
   int m_nstep = -1;
   int m_max_step = -1;
+  int m_nfiles = 1;
 
   int m_regrid_int = -1;
   int m_regrid_on_restart = 0;
@@ -1904,6 +1922,8 @@ public:
 
   // Temporals
   int m_do_temporals = 0;
+  int m_do_patch_mfr = 0;
+  amrex::Vector<std::unique_ptr<BPatch>> m_bPatches;
   int m_temp_int = 5;
   int m_do_extremas = 0;
   int m_do_massBalance = 0;
@@ -1924,6 +1944,7 @@ public:
   std::ofstream tmpExtremasFile;
   std::ofstream tmpMassFile;
   std::ofstream tmpSpecFile;
+  std::ofstream tmppatchmfrFile;
 
   // Number of ghost cells
 #ifdef AMREX_USE_EB
