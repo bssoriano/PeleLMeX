@@ -35,15 +35,6 @@ PeleLM::computeSootSource(const PeleLM::TimeStamp& a_timestamp, const Real a_dt)
 {
   bool pres_term = false; // Do not include change in pressure in energy
   
-  // int Nlev=finest_level+1;
-  // Vector<MultiFab> diffSootSrc(Nlev);      // Fab containing soot source terms
-  // int nComp=5;
-  
-  // for (int lev = 0; lev <= finest_level; lev++) {
-  //   diffSootSrc[lev].define(grids[lev], dmap[lev], nComp, 1);
-  //   diffSootSrc[lev].setVal(0.0);
-  // }
-
   for (int lev = 0; lev <= finest_level; lev++) {
     auto* ldata_p = getLevelDataPtr(lev, a_timestamp);
     Real time = getTime(lev, a_timestamp);
@@ -64,20 +55,6 @@ PeleLM::computeSootSource(const PeleLM::TimeStamp& a_timestamp, const Real a_dt)
 
     }
 
-    // std::string outfile = "plt_soot";
-
-    // Vector<std::string> nnames(nComp);
-    // nnames[0] = "nucleation";
-    // nnames[1] = "condensation";
-    // nnames[2] = "coagulation";
-    // nnames[3] = "surf_growth";
-    // nnames[4] = "oxidation";
-
-    // Vector<int> isteps(Nlev, 0);
-    // Vector<IntVect> refRatios(Nlev-1,{AMREX_D_DECL(2, 2, 2)});
-
-    // amrex::WriteMultiLevelPlotfile(outfile, Nlev, GetVecOfConstPtrs(diffSootSrc), nnames,
-    //                                geom, 0.0, isteps, refRatios);
   }
 }
 
