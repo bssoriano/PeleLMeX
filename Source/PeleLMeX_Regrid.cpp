@@ -410,6 +410,14 @@ PeleLM::MakeNewLevelFromCoarse(
     ba, dm, NVAR, amrex::max(m_nGrowAdv, m_nGrowMAC), MFInfo(),
     *m_factory[lev]);
   m_extSource[lev]->setVal(0.);
+
+#ifdef PELE_USE_SOOT
+  int nComp=5;
+  diffSootSrc[lev] = std::make_unique<MultiFab>(
+    ba, dm, nComp, 1, MFInfo(),
+    *m_factory[lev]);
+  diffSootSrc[lev]->setVal(0.);
+#endif
 }
 
 void
@@ -521,6 +529,14 @@ PeleLM::RemakeLevel(
     ba, dm, NVAR, amrex::max(m_nGrowAdv, m_nGrowMAC), MFInfo(),
     *m_factory[lev]);
   m_extSource[lev]->setVal(0.);
+
+#ifdef PELE_USE_SOOT
+  int nComp=5;
+  diffSootSrc[lev] = std::make_unique<MultiFab>(
+    ba, dm, nComp, 1, MFInfo(),
+    *m_factory[lev]);
+  diffSootSrc[lev]->setVal(0.);
+#endif
 }
 
 void
