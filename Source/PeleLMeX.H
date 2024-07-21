@@ -1669,6 +1669,11 @@ public:
   // External source terms
   amrex::Vector<std::unique_ptr<amrex::MultiFab>> m_extSource;
 
+#ifdef PELE_USE_SOOT
+  // soot source terms
+  amrex::Vector<std::unique_ptr<amrex::MultiFab>> diffSootSrc;      
+#endif
+  
   // Fine-covered cells mask
   amrex::Vector<std::unique_ptr<amrex::iMultiFab>> m_coveredMask;
   int m_resetCoveredMask;

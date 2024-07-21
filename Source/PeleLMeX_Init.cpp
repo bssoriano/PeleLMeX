@@ -124,6 +124,14 @@ PeleLM::MakeNewLevelFromScratch(
     *m_factory[lev]);
   m_extSource[lev]->setVal(0.);
 
+#ifdef PELE_USE_SOOT
+  int nComp=5;
+  diffSootSrc[lev] = std::make_unique<MultiFab>(
+    grids[lev], dmap[lev], nComp, 1, MFInfo(),
+    *m_factory[lev]);
+  diffSootSrc[lev]->setVal(0.);
+#endif
+
 #ifdef AMREX_USE_EB
   if (lev == 0 && (m_signDistNeeded != 0)) {
     // Set up CC signed distance container to control EB refinement

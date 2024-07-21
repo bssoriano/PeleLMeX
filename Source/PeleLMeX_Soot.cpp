@@ -34,6 +34,7 @@ void
 PeleLM::computeSootSource(const PeleLM::TimeStamp& a_timestamp, const Real a_dt)
 {
   bool pres_term = false; // Do not include change in pressure in energy
+  
   for (int lev = 0; lev <= finest_level; lev++) {
     auto* ldata_p = getLevelDataPtr(lev, a_timestamp);
     Real time = getTime(lev, a_timestamp);
@@ -46,9 +47,14 @@ PeleLM::computeSootSource(const PeleLM::TimeStamp& a_timestamp, const Real a_dt)
       auto const& state_arr = ldata_p->state.const_array(mfi, DENSITY);
       auto const& mu = ldata_p->visc_cc.const_array(mfi, 0);
       auto const& source_arr = m_extSource[lev]->array(mfi, DENSITY);
+      auto const& diff_mom_src = diffSootSrc[lev]->array(mfi,0);
+      // auto const& diff_mom_src = diffSootSrc[lev].array(mfi);
+
       soot_model->computeSootSourceTerm(
-        gbx, state_arr, mu, source_arr, time, a_dt, pres_term);
+        gbx, state_arr, mu, source_arr, time, a_dt, diff_mom_src, pres_term);
+
     }
+
   }
 }
 

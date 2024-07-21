@@ -144,6 +144,10 @@ PeleLM::WritePlotFile()
   }
 #endif
 
+#ifdef PELE_USE_SOOT
+  ncomp += 5; //soot source terms
+#endif
+
 #ifdef PELE_USE_EFIELD
   if (m_do_extraEFdiags) {
     ncomp += NUM_IONS * AMREX_SPACEDIM;
@@ -189,6 +193,11 @@ PeleLM::WritePlotFile()
       std::string sootname = soot_model->sootVariableName(mom);
       plt_VarsName.push_back(sootname);
     }
+    plt_VarsName.push_back("soot_nucl");
+    plt_VarsName.push_back("soot_cond");
+    plt_VarsName.push_back("soot_coag");
+    plt_VarsName.push_back("soot_surf");
+    plt_VarsName.push_back("soot_oxid");
 #endif
 #ifdef PELE_USE_RADIATION
     if (do_rad_solve) {
@@ -302,6 +311,9 @@ PeleLM::WritePlotFile()
         mf_plt[lev], m_leveldata_new[lev]->state, FIRSTSOOT, cnt, NUMSOOTVAR,
         0);
       cnt += NUMSOOTVAR;
+
+      MultiFab::Copy(mf_plt[lev], *diffSootSrc[lev], 0, cnt, 5, 0);
+      cnt += 5;
 #endif
 #ifdef PELE_USE_RADIATION
       if (do_rad_solve) {

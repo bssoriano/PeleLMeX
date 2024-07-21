@@ -1325,6 +1325,9 @@ PeleLM::resizeArray()
   // External sources
   m_extSource.resize(max_level + 1);
 
+  // Soot sources
+  diffSootSrc.resize(max_level + 1);
+
   // Factory
   m_factory.resize(max_level + 1);
 
