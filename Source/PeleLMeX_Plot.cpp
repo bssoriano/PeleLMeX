@@ -6,7 +6,6 @@
 #include <AMReX_ParmParse.H>
 #include <PeleLMeX_BCfill.H>
 #include <AMReX_FillPatchUtil.H>
-#include <PeleLMeX_PatchFlowVariables.H>
 #include <memory>
 #ifdef AMREX_USE_EB
 #include <AMReX_EBInterpolater.H>
@@ -204,8 +203,8 @@ PeleLM::WritePlotFile()
     // soot_model = new SootModel{};
     // soot_model->define();
 
-    for (int mom = 0; mom < NUMSOOTVAR; mom++) {
-      std::string specname = soot_model->sootVariableName(mom);
+    for (int spec = 0; spec < NUM_SOOT_GS; spec++) {
+      std::string specname = soot_model->gasSpeciesName(spec);
       plt_VarsName.push_back("soot_I_R(" + specname + ")");
     }
 
@@ -976,12 +975,6 @@ PeleLM::initLevelDataFromPlt(int a_lev, const std::string& a_dataPltFile)
   ldata_p->gp.setVal(0.0);
 
   ProbParm const* lprobparm = prob_parm_d;
-
-  // If m_do_patch_flow_variables is set as true, call user-defined function to
-  // patch flow variables
-  if (m_do_patch_flow_variables) {
-    patchFlowVariables(geom[a_lev], *lprobparm, ldata_p->state);
-  }
 
   // Enforce rho and rhoH consistent with temperature and mixture
   // The above handles species mapping (to some extent), but nothing enforce
