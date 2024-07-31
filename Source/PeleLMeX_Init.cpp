@@ -130,6 +130,12 @@ PeleLM::MakeNewLevelFromScratch(
     grids[lev], dmap[lev], nComp, 1, MFInfo(),
     *m_factory[lev]);
   diffSootSrc[lev]->setVal(0.);
+
+  nComp=NUM_SOOT_GS;
+  reacSootSrc[lev] = std::make_unique<MultiFab>(
+    grids[lev], dmap[lev], nComp, 1, MFInfo(),
+    *m_factory[lev]);
+  reacSootSrc[lev]->setVal(0.);
 #endif
 
 #ifdef AMREX_USE_EB
@@ -346,7 +352,8 @@ PeleLM::initLevelData(int lev)
 
   // Prob/PMF data
   ProbParm const* lprobparm = prob_parm_d;
-  auto const* lpmfdata = pmf_data.device_parm();
+  pele::physics::PMF::PmfData::DataContainer const* lpmfdata =
+    pmf_data.getDeviceData();
 
 #ifdef AMREX_USE_OMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())

@@ -146,6 +146,7 @@ PeleLM::WritePlotFile()
 
 #ifdef PELE_USE_SOOT
   ncomp += 5; //soot source terms
+  ncomp += NUM_SOOT_GS; //reactions soot source terms
 #endif
 
 #ifdef PELE_USE_EFIELD
@@ -198,6 +199,15 @@ PeleLM::WritePlotFile()
     plt_VarsName.push_back("soot_coag");
     plt_VarsName.push_back("soot_surf");
     plt_VarsName.push_back("soot_oxid");
+
+    // soot_model = new SootModel{};
+    // soot_model->define();
+
+    for (int mom = 0; mom < NUMSOOTVAR; mom++) {
+      std::string specname = soot_model->sootVariableName(mom);
+      plt_VarsName.push_back("soot_I_R(" + specname + ")");
+    }
+
 #endif
 #ifdef PELE_USE_RADIATION
     if (do_rad_solve) {
@@ -314,6 +324,9 @@ PeleLM::WritePlotFile()
 
       MultiFab::Copy(mf_plt[lev], *diffSootSrc[lev], 0, cnt, 5, 0);
       cnt += 5;
+
+      MultiFab::Copy(mf_plt[lev], *reacSootSrc[lev], 0, cnt, NUM_SOOT_GS, 0);
+      cnt += NUM_SOOT_GS;
 #endif
 #ifdef PELE_USE_RADIATION
       if (do_rad_solve) {

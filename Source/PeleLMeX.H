@@ -1651,7 +1651,9 @@ public:
 
 #ifdef PELE_USE_SOOT
   // soot source terms
-  amrex::Vector<std::unique_ptr<amrex::MultiFab>> diffSootSrc;      
+  amrex::Vector<std::unique_ptr<amrex::MultiFab>> diffSootSrc;    
+  // reaction source terms computed from soot model  
+  amrex::Vector<std::unique_ptr<amrex::MultiFab>> reacSootSrc;      
 #endif
   
   // Fine-covered cells mask

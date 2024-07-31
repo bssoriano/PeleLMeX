@@ -48,10 +48,11 @@ PeleLM::computeSootSource(const PeleLM::TimeStamp& a_timestamp, const Real a_dt)
       auto const& mu = ldata_p->visc_cc.const_array(mfi, 0);
       auto const& source_arr = m_extSource[lev]->array(mfi, DENSITY);
       auto const& diff_mom_src = diffSootSrc[lev]->array(mfi,0);
+      auto const& reac_mom_src = reacSootSrc[lev]->array(mfi,0);
       // auto const& diff_mom_src = diffSootSrc[lev].array(mfi);
 
       soot_model->computeSootSourceTerm(
-        gbx, state_arr, mu, source_arr, time, a_dt, diff_mom_src, pres_term);
+        gbx, state_arr, mu, source_arr, time, a_dt, diff_mom_src, reac_mom_src, pres_term);
 
     }
 
