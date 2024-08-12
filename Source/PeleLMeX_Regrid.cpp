@@ -417,6 +417,12 @@ PeleLM::MakeNewLevelFromCoarse(
     ba, dm, nComp, 1, MFInfo(),
     *m_factory[lev]);
   diffSootSrc[lev]->setVal(0.);
+
+  nComp=NUM_SOOT_GS;
+  reacSootSrc[lev] = std::make_unique<MultiFab>(
+    ba, dm, nComp, 1, MFInfo(),
+    *m_factory[lev]);
+  reacSootSrc[lev]->setVal(0.);
 #endif
 }
 
