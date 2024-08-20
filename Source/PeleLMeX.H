@@ -1671,7 +1671,11 @@ public:
 
 #ifdef PELE_USE_SOOT
   // soot source terms
-  amrex::Vector<std::unique_ptr<amrex::MultiFab>> diffSootSrc;      
+  amrex::Vector<std::unique_ptr<amrex::MultiFab>> diffSootSrc;    
+  // species reaction source terms computed from soot model  
+  amrex::Vector<std::unique_ptr<amrex::MultiFab>> SpecReacSootSrc;      
+  // reaction source terms computed from soot model  
+  amrex::Vector<std::unique_ptr<amrex::MultiFab>> reacSootSrc;      
 #endif
   
   // Fine-covered cells mask
@@ -1812,6 +1816,7 @@ public:
   int m_ioDigits = 5;
   amrex::Vector<std::string> m_evaluatePlotVars;
   bool m_write_hdf5_pltfile = false;
+  bool m_do_patch_flow_variables = false;
 
   //-----------------------------------------------------------------------------
   // ALGORITHM
