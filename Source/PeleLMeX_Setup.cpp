@@ -1316,6 +1316,7 @@ PeleLM::resizeArray()
 
   // Soot sources
   diffSootSrc.resize(max_level + 1);
+  SpecReacSootSrc.resize(max_level + 1);
   reacSootSrc.resize(max_level + 1);
 
   // Factory

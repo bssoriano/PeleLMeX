@@ -132,6 +132,12 @@ PeleLM::MakeNewLevelFromScratch(
   diffSootSrc[lev]->setVal(0.);
 
   nComp=NUM_SOOT_GS;
+  SpecReacSootSrc[lev] = std::make_unique<MultiFab>(
+    grids[lev], dmap[lev], nComp, 1, MFInfo(),
+    *m_factory[lev]);
+  SpecReacSootSrc[lev]->setVal(0.);
+  
+  nComp=NUM_SOOT_REACT;
   reacSootSrc[lev] = std::make_unique<MultiFab>(
     grids[lev], dmap[lev], nComp, 1, MFInfo(),
     *m_factory[lev]);
