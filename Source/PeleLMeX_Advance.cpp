@@ -471,10 +471,10 @@ void PeleLM::updateMF(std::unique_ptr<AdvanceAdvData> &advData,
       AMREX_GPU_DEVICE (int i, int j, int k) noexcept
       {
         for (int n = 0; n < NUMMFVAR; n++) {
-          // new_arr(i,j,k,n) = old_arr(i,j,k,n) + fMF(i,j,k,n) * dt + ext(i, j, k, n);
+           new_arr(i,j,k,n) = old_arr(i,j,k,n) + fMF(i,j,k,n) * dt + ext(i, j, k, n);
           
-          new_arr(i, j, k, n) =
-            old_arr(i, j, k, n) + dt * (a_of_s(i, j, k, n) + ext(i, j, k, n)) + fMF(i,j,k,n) * dt;
+          //new_arr(i, j, k, n) =
+          //  old_arr(i, j, k, n) + dt * (a_of_s(i, j, k, n) + ext(i, j, k, n)) + fMF(i,j,k,n) * dt;
         }
 
 #ifdef PELELM_USE_AGE
