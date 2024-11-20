@@ -4,6 +4,9 @@
 #ifdef AMREX_USE_EB
 #include <AMReX_EB_utils.H>
 #endif
+#ifdef PELE_USE_SOOT
+#include <SootData.H>
+#endif
 
 using namespace amrex;
 

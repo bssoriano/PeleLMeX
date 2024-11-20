@@ -1,6 +1,8 @@
 #include <PeleLMeX.H>
 #include <memory>
+#ifdef PELE_USE_SOOT
 #include <SootModel.H>
+#endif
 using namespace amrex;
 
 void

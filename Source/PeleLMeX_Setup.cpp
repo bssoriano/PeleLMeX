@@ -1315,9 +1315,10 @@ PeleLM::resizeArray()
   m_extSource.resize(max_level + 1);
 
   // Soot sources
+#ifdef PELE_USE_SOOT
   diffSootSrc.resize(max_level + 1);
   reacSootSrc.resize(max_level + 1);
-
+#endif
   // Factory
   m_factory.resize(max_level + 1);
 
