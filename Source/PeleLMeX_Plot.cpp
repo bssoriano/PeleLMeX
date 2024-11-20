@@ -146,7 +146,8 @@ PeleLM::WritePlotFile()
 
 #ifdef PELE_USE_SOOT
   ncomp += 5; //soot source terms
-  ncomp += NUM_SOOT_GS; //reactions soot source terms
+  ncomp += NUM_SOOT_GS; //species reactions soot source terms
+  ncomp += NUM_SOOT_REACT; //reactions soot source terms
 #endif
 
 #ifdef PELE_USE_EFIELD
@@ -206,6 +207,11 @@ PeleLM::WritePlotFile()
     for (int spec = 0; spec < NUM_SOOT_GS; spec++) {
       std::string specname = soot_model->gasSpeciesName(spec);
       plt_VarsName.push_back("soot_I_R(" + specname + ")");
+    }
+    
+    for (int reac = 0; reac < NUM_SOOT_REACT; reac++) {
+      std::string name = "reaction_"+std::to_string(reac);
+      plt_VarsName.push_back(name);
     }
 
 #endif
@@ -325,8 +331,11 @@ PeleLM::WritePlotFile()
       MultiFab::Copy(mf_plt[lev], *diffSootSrc[lev], 0, cnt, 5, 0);
       cnt += 5;
 
-      MultiFab::Copy(mf_plt[lev], *reacSootSrc[lev], 0, cnt, NUM_SOOT_GS, 0);
+      MultiFab::Copy(mf_plt[lev], *SpecReacSootSrc[lev], 0, cnt, NUM_SOOT_GS, 0);
       cnt += NUM_SOOT_GS;
+      
+      MultiFab::Copy(mf_plt[lev], *reacSootSrc[lev], 0, cnt, NUM_SOOT_REACT, 0);
+      cnt += NUM_SOOT_REACT;
 #endif
 #ifdef PELE_USE_RADIATION
       if (do_rad_solve) {

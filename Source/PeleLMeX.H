@@ -1652,6 +1652,8 @@ public:
 #ifdef PELE_USE_SOOT
   // soot source terms
   amrex::Vector<std::unique_ptr<amrex::MultiFab>> diffSootSrc;    
+  // species reaction source terms computed from soot model  
+  amrex::Vector<std::unique_ptr<amrex::MultiFab>> SpecReacSootSrc;      
   // reaction source terms computed from soot model  
   amrex::Vector<std::unique_ptr<amrex::MultiFab>> reacSootSrc;      
 #endif
