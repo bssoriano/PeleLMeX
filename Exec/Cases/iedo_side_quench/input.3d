@@ -44,7 +44,7 @@ prob.t_ei = 6.0e-4 #time end of injection
 prob.Ku   = 1.0e-5 #parameter controling transition width between zero and maximum velocity 
 prob.t_tr = 3.0e-4 #time start of injection of combustion products from pre-chamber
 prob.Ktr  = 6.5e-8 #parameter controling transition width between fresh mixture and products
-prob.jet_angle = 60. #jet angle in degrees. The wall normal is 90 degrees
+prob.jet_angle = 30. #jet angle in degrees. The wall normal is 90 degrees
 
 # -- Turbulent inflow
 # turbinflows = lowZ
