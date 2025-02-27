@@ -1,18 +1,18 @@
 #----------------------DOMAIN DEFINITION------------------------
 geometry.is_periodic = 0 0 0              # For each dir, 0: non-perio, 1: periodic
 geometry.coord_sys   = 0                  # 0 => cart, 1 => RZ
-geometry.prob_lo     = -0.001 -0.0105 0.0       # x_lo y_lo (z_lo)
-geometry.prob_hi     =  0.020  0.0105 0.0105       # x_hi y_hi (z_hi)
+geometry.prob_lo     = -0.030 -0.025 0.0       # x_lo y_lo (z_lo)
+geometry.prob_hi     =  0.070  0.025 0.025       # x_hi y_hi (z_hi)
 
 # >>>>>>>>>>>>>  BC FLAGS <<<<<<<<<<<<<<<<
 # Interior, Inflow, Outflow, Symmetry,
 # SlipWallAdiab, NoSlipWallAdiab, SlipWallIsotherm, NoSlipWallIsotherm
 peleLM.lo_bc = Outflow Outflow Inflow
-peleLM.hi_bc = Outflow Outflow NoSlipWallIsotherm
+peleLM.hi_bc = NoSlipWallIsotherm Outflow NoSlipWallIsotherm
 
 
 #-------------------------AMR CONTROL----------------------------
-amr.n_cell          = 64 64 32      # Level 0 number of cells in each direction   
+amr.n_cell          = 128 64 32      # Level 0 number of cells in each direction   
 amr.v               = 1                # AMR verbose
 amr.max_level       = 3                # maximum level number allowed
 amr.ref_ratio       = 2 2 2 2          # refinement ratio
@@ -28,8 +28,8 @@ prob.P_mean = 2.8e+6
 prob.T_mean = 700.0
 prob.T_wall = 500.0
 prob.T_jet = 2775.68
-prob.V_jet = 175.0
-prob.jet_rad = 0.4e-3
+prob.V_jet = 400.0
+prob.jet_rad = 0.8e-3
 prob.phi_chamber = 0.588
 prob.phi_prechamber = 1.0
 
@@ -44,7 +44,7 @@ prob.t_ei = 6.0e-4 #time end of injection
 prob.Ku   = 1.0e-5 #parameter controling transition width between zero and maximum velocity 
 prob.t_tr = 3.0e-4 #time start of injection of combustion products from pre-chamber
 prob.Ktr  = 6.5e-8 #parameter controling transition width between fresh mixture and products
-prob.jet_angle = 45. #jet angle in degrees. The wall normal is 90 degrees
+prob.jet_angle = 60. #jet angle in degrees. The wall normal is 90 degrees
 
 # -- Turbulent inflow
 # turbinflows = lowZ
@@ -81,7 +81,7 @@ peleLM.closed_chamber = 0
 godunov.use_ppm = 0
 
 amr.stop_time = 8.0e-4
-# amr.max_step = 2751
+amr.max_step = 0
 amr.dt_shrink = 1.0
 amr.dt_change_max = 1.1
 amr.cfl = 0.5
@@ -93,9 +93,9 @@ peleLM.deltaT_crashIfFailing = 0
 #-------------------------IO CONTROL----------------------------
 amr.checkpoint_files_output = 1
 # amr.restart             = chk10500
-amr.check_file          = side_interaction/chk          # root name of checkpoint file
+amr.check_file          = chk          # root name of checkpoint file
 amr.check_int           = 250           # number of timesteps between checkpoints
-amr.plot_file           = side_interaction/plt          # root name of plot file
+amr.plot_file           = plt          # root name of plot file
 # amr.plot_int            = 50          # number of timesteps between plot files
 amr.plot_per            = 2.e-5
 amr.derive_plot_vars    = mag_vel mag_vort avg_pressure mass_fractions
@@ -126,8 +126,8 @@ amr.inBox.in_box_hi     =    1.0e-3       1.0e-3      0.5e-3
 
 # --------------- INPUTS TO CHEMISTRY REACTOR ---------------
 peleLM.do_react = 1
-# peleLM.chem_integrator = "ReactorCvode"
-peleLM.chem_integrator = "ReactorNull"
+peleLM.chem_integrator = "ReactorCvode"
+# peleLM.chem_integrator = "ReactorNull"
 # peleLM.chem_integrator = "ReactorRK64"
 peleLM.use_typ_vals_chem = 1          # Use species/temp typical values in CVODE
 peleLM.typical_values_reset_int = 10

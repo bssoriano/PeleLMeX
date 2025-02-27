@@ -210,7 +210,7 @@ bcnormal(
       amrex::Real r = sqrt(pow((0.0-x[0]),2));
 #elif (AMREX_SPACEDIM == 3)
   if (idir == 2 and sgn == 1) {
-      amrex::Real r = sqrt(pow((0.0-x[0]),2)+pow((0.0-x[1]),2));
+      amrex::Real r = sqrt(pow((0.0-x[0]),2)/pow(std::cos(prob_parm.jet_angle),2)+pow((0.0-x[1]),2));
 #endif
 
       amrex::Real N = 20.;
@@ -301,6 +301,10 @@ bcnormal(
 #elif (AMREX_SPACEDIM == 3)
   // Set domain boundary Temp on the z-hi face when using NoSlipWallIsotherm
   if (idir == 2 && sgn == -1) {
+    s_ext[TEMP] = prob_parm.Twall;
+  }
+  // Set domain boundary Temp on the x-hi face when using NoSlipWallIsotherm
+  if (idir == 0 && sgn == -1) {
     s_ext[TEMP] = prob_parm.Twall;
   }
 #endif
