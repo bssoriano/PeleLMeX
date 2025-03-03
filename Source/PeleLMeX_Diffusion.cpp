@@ -206,6 +206,7 @@ PeleLM::computeDifferentialDiffusionTerms(
 #endif
 }
 
+
 template <typename EOSType>
 void
 PeleLM::adjustSpeciesFluxes(
@@ -1248,14 +1249,10 @@ PeleLM::differentialDiffusionUpdate(
 #ifdef AMREX_USE_EB
   if (m_isothermalEB != 0) {
     // Set up EB dirichlet value and diffusivity
-    Vector<MultiFab> EBvalue(finest_level + 1);
     Vector<MultiFab> EBdiff(finest_level + 1);
     for (int lev = 0; lev <= finest_level; ++lev) {
-      EBvalue[lev].define(
-        grids[lev], dmap[lev], 1, 0, MFInfo(), EBFactory(lev));
       EBdiff[lev].define(grids[lev], dmap[lev], 1, 0, MFInfo(), EBFactory(lev));
       getEBDiff(lev, AmrNewTime, EBdiff[lev], NUM_SPECIES);
-      getEBState(lev, getTime(lev, AmrNewTime), EBvalue[lev], TEMP, 1);
     }
     getDiffusionOp()->computeDiffFluxes(
       GetVecOfArrOfPtrs(fluxes), NUM_SPECIES, GetVecOfPtrs(EBfluxes), 0,
@@ -1493,14 +1490,10 @@ PeleLM::deltaTIter_update(
 #ifdef AMREX_USE_EB
   if (m_isothermalEB != 0) {
     // Set up EB dirichlet value and diffusivity
-    Vector<MultiFab> EBvalue(finest_level + 1);
     Vector<MultiFab> EBdiff(finest_level + 1);
     for (int lev = 0; lev <= finest_level; ++lev) {
-      EBvalue[lev].define(
-        grids[lev], dmap[lev], 1, 0, MFInfo(), EBFactory(lev));
       EBdiff[lev].define(grids[lev], dmap[lev], 1, 0, MFInfo(), EBFactory(lev));
       getEBDiff(lev, AmrNewTime, EBdiff[lev], NUM_SPECIES);
-      getEBState(lev, getTime(lev, AmrNewTime), EBvalue[lev], TEMP, 1);
     }
     getDiffusionOp()->computeDiffFluxes(
       a_fluxes, NUM_SPECIES, a_ebfluxes, 0,
