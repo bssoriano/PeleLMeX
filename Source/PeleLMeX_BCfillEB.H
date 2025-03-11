@@ -8,6 +8,7 @@
 
 using namespace amrex;
 
+
 template <typename, typename T>
 struct matchBCNormEB_sign {
     static_assert(std::integral_constant<T, false>::value,

@@ -48,7 +48,6 @@ class SprayParticleContainer;
 class SootModel;
 #endif
 
-<<<<<<< HEAD
 class BPatch;
 struct EBhandle;
 
@@ -1421,7 +1420,7 @@ public:
 
   void
   extendSignedDistance(amrex::MultiFab* a_signDist, amrex::Real a_extendFactor);
-
+  
   void getEBState(
     int a_lev,
     const PeleLM::TimeStamp &a_time,
