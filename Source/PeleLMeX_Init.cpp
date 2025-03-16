@@ -216,6 +216,14 @@ PeleLM::initData()
     averageDownState(AmrNewTime);
     fillPatchState(AmrNewTime);
 
+    if (m_nAux > 0) {
+      averageDownAux(AmrNewTime);
+      fillPatchAux(AmrNewTime);
+    }
+
+    if (m_plot_init_state) {
+      WritePlotFile();
+    }
     //----------------------------------------------------------------
     // If performing UnitTest, let's stop here
     if (runMode() != "normal") {
@@ -397,7 +405,7 @@ PeleLM::projectInitSolution()
       std::unique_ptr<AdvanceDiffData> diffData;
       diffData = std::make_unique<AdvanceDiffData>(
         finest_level, grids, dmap, m_factory, m_nGrowAdv, m_use_wbar,
-        m_use_soret, is_initialization);
+        m_use_soret, m_nAux, is_initialization);
       calcDivU(
         is_initialization, computeDiffusionTerm, do_avgDown, AmrNewTime,
         diffData);
@@ -452,7 +460,7 @@ PeleLM::projectInitSolution()
         std::unique_ptr<AdvanceDiffData> diffData;
         diffData = std::make_unique<AdvanceDiffData>(
           finest_level, grids, dmap, m_factory, m_nGrowAdv, m_use_wbar,
-          m_use_soret, is_initialization);
+          m_use_soret, m_nAux, is_initialization);
         calcDivU(
           is_initialization, computeDiffusionTerm, do_avgDown, AmrNewTime,
           diffData);

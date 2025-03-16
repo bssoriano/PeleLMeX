@@ -110,6 +110,7 @@ IO parameters
     #--------------------------IO CONTROL--------------------------
     amr.plot_int         = 20              # [OPT, DEF=-1] Frequency (as step #) for writing plot file
     amr.plot_overwrite   = false           # [OPT, DEF=false] Overwrite plot files with same name if present
+    amr.plot_init_state  = false           # [OPT, DEF=false] Create a plot file during initialization before the initial projections
     amr.plot_per         = 0.002           # [OPT, DEF=-1] Period (time in s) for writing plot file
     amr.plot_per_exact   = 1               # [OPT, DEF=0] Flag to enforce exactly plt_per by shortening dt
     amr.plot_file        = "plt_"          # [OPT, DEF="plt_"] Plot file prefix
@@ -271,6 +272,11 @@ PeleLMeX algorithm
     peleLM.spark1.radius = 1e-3            # [OPT] Radius of the spark [m]
     peleLM.spark1.duration = 1e-3          # [OPT] Duration of the spark [s]
     peleLM.spark1.time = 1e-2              # [OPT] Time when spark starts [s]
+
+    peleLM.aux_vars = a b ...              # [OPT] Names of auxiliary variables
+    peleLM.a.advect = 1                    # [OPT, DEF = 1] Flag whether this variable is advected
+    peleLM.a.conservative = 1              # [OPT, DEF = 1] Flag whether this variable is conservative
+    peleLM.a.Schmidt = 0.7                 # [OPT, DEF = -1] Schmidt number for auxiliary variable. If unspecified or negative, assumed to not diffuse.
 
     peleLM.user_defined_ext_sources = 0    # [OPT, DEF=0] Enable user defined source terms. Requires local ProblemSpecificFunctions.cpp.
 
