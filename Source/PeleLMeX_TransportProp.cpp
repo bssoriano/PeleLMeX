@@ -348,12 +348,12 @@ PeleLM::calcDiffusivity(const TimeStamp& a_time)
           ldata_p->diff_aux_cc, ldata_p->diff_cc, NUM_SPECIES, n, 1,
           ldata_p->diff_cc.nGrowVect()); // lambda
 
-        const auto& ba = ldata_p->state.boxArray();
-        const auto& dm = ldata_p->state.DistributionMap();
-        const auto& factory = ldata_p->state.Factory();
-        
+        const auto& ba = ldata_p->diff_cc.boxArray();
+        const auto& dm = ldata_p->diff_cc.DistributionMap();
+        const auto& factory = ldata_p->diff_cc.Factory();
+
         amrex::MultiFab cp_cc;
-        int ngrow = 1;
+        int ngrow = ldata_p->diff_cc.nGrow();
         auto const* leosparm = eos_parms.device_parm();
         cp_cc.define(ba, dm, 1, ngrow, MFInfo(), factory);
         auto const& state_arr = ldata_p->state.const_arrays();
