@@ -11,7 +11,7 @@
 #include "PeleLMeX_FlowControllerData.H"
 #include "PeleLMeX_BPatch.H"
 
-#ifdef PELE_USE_EFIELD
+#ifdef PELE_USE_PLASMA
 #include "PrecondOp.H"
 #endif
 
@@ -119,6 +119,7 @@ public:
 
   // ReadProblemParameters
   void readProbParm();
+  void freeProbParm();
 
   // ReadGridFile
   void
@@ -190,7 +191,7 @@ public:
     amrex::Array<amrex::MultiFab, AMREX_SPACEDIM>
       lambda_turb_fc;        // Turbulent thermal conductivity (dim:)
     amrex::MultiFab diff_cc; // Diffusivity (dim:NUM_SPECIES+2)
-#ifdef PELE_USE_EFIELD
+#ifdef PELE_USE_PLASMA
     amrex::MultiFab diffE_cc; // Electron diffusivity (dim:1)
     amrex::MultiFab mobE_cc;  // Electron mobility (dim:1)
     amrex::MultiFab mob_cc;   // Species mobility (dim:NUM_IONS)
@@ -209,7 +210,7 @@ public:
       const amrex::FabFactory<amrex::FArrayBox>& factory);
     amrex::MultiFab I_R;    // Species reaction rates
     amrex::MultiFab functC; // Implicit integrator function call count
-#ifdef PELE_USE_EFIELD
+#ifdef PELE_USE_PLASMA
     amrex::MultiFab I_RnE; // Electron number density reaction term
 #endif
   };
@@ -265,7 +266,7 @@ public:
     amrex::Vector<amrex::MultiFab>
       Forcing; // Scalar forcing for both advection and diffusion
     amrex::Vector<amrex::MultiFab> mac_divu; // divu used in MAC projection
-#ifdef PELE_USE_EFIELD
+#ifdef PELE_USE_PLASMA
     amrex::Vector<amrex::Array<amrex::MultiFab, AMREX_SPACEDIM>>
       uDrift; // ions drift face velocity
 #endif
@@ -1051,7 +1052,7 @@ public:
   void fillPatchDensity(const PeleLM::TimeStamp& a_time);
   void fillPatchSpecies(const PeleLM::TimeStamp& a_time);
   void fillPatchTemp(const PeleLM::TimeStamp& a_time);
-#ifdef PELE_USE_EFIELD
+#ifdef PELE_USE_PLASMA
   void fillPatchPhiV(const PeleLM::TimeStamp& a_time);
 #endif
 
@@ -1094,7 +1095,7 @@ public:
     int nGrowForce);
   void fillpatch_chemFunctCall(
     int lev, amrex::Real a_time, amrex::MultiFab& a_fctC, int nGhost);
-#ifdef PELE_USE_EFIELD
+#ifdef PELE_USE_PLASMA
   void fillpatch_phiV(
     int lev,
     amrex::Real a_time,
@@ -1141,7 +1142,7 @@ public:
   void averageDown(
     const PeleLM::TimeStamp& a_time, const int state_comp, const int ncomp);
   void averageDownReaction();
-#ifdef PELE_USE_EFIELD
+#ifdef PELE_USE_PLASMA
   void averageDownnE(const PeleLM::TimeStamp& a_time);
   void averageDownPhiV(const PeleLM::TimeStamp& a_time);
 #endif
@@ -1502,10 +1503,10 @@ public:
   void getScalarReactForce(std::unique_ptr<AdvanceAdvData>& advData);
   //-----------------------------------------------------------------------------
 
-#ifdef PELE_USE_EFIELD
+#ifdef PELE_USE_PLASMA
 #include <PeleLMeX_EF.H>
   //-----------------------------------------------------------------------------
-  // EFIELD
+  // PLASMA
 
   void poissonSolveEF(const PeleLM::TimeStamp& a_time);
 
@@ -1621,7 +1622,7 @@ public:
 
   static int nCompIR()
   {
-#ifdef PELE_USE_EFIELD
+#ifdef PELE_USE_PLASMA
     return NUM_SPECIES + 1;
 #else
     return NUM_SPECIES;
@@ -1630,7 +1631,7 @@ public:
 
   static int nCompForcing()
   {
-#ifdef PELE_USE_EFIELD
+#ifdef PELE_USE_PLASMA
     return NUM_SPECIES + 2;
 #else
     return NUM_SPECIES + 1;
@@ -1677,7 +1678,7 @@ public:
   amrex::Vector<amrex::MultiFab*>
   getViscosityVect(const PeleLM::TimeStamp& a_time);
   amrex::Vector<amrex::MultiFab*> getIRVect();
-#ifdef PELE_USE_EFIELD
+#ifdef PELE_USE_PLASMA
   amrex::Vector<std::unique_ptr<amrex::MultiFab>>
   getPhiVVect(const PeleLM::TimeStamp& a_time);
   amrex::Vector<std::unique_ptr<amrex::MultiFab>>
@@ -1716,7 +1717,7 @@ public:
 
   // Fine-covered cells mask
   amrex::Vector<std::unique_ptr<amrex::iMultiFab>> m_coveredMask;
-  int m_resetCoveredMask;
+  int m_resetCoveredMask{0};
 
   // Chemistry BA & DM
   amrex::Vector<std::unique_ptr<amrex::BoxArray>> m_baChem;
@@ -1730,7 +1731,7 @@ public:
 
   // Boundary Conditions
   amrex::BCRec m_phys_bc; // Store physical BC from input
-#ifdef PELE_USE_EFIELD
+#ifdef PELE_USE_PLASMA
   amrex::BCRec m_phiV_bc;    // Store separate phiV BC from input
   amrex::BCRec m_phiV_bcpol; // Store separate phiV BC polarity from input
 #endif
@@ -1847,6 +1848,7 @@ public:
   int m_plotStateSpec = 0;
   int m_plot_int = 0;
   bool m_plot_overwrite = false;
+  bool m_plot_init_state = false;
   int m_plot_zeroEBcovered = 1;
   amrex::Real m_plot_per_approx = -1.;
   amrex::Real m_plot_per_exact = -1.;
