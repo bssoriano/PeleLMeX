@@ -93,19 +93,31 @@ PeleLM::readProbParm() // NOLINT(readability-make-member-function-const)
   pp.query("Ktr",prob_parm->Ktr);
   amrex::Real jet_angle_deg = 0.0;
   pp.query("jet_angle",jet_angle_deg);
+  
+  PeleLM::pmf_data.initialize();
 
-  prob_parm->jet_angle = Pi*jet_angle_deg/180; //conversion to rad
+  prob_parm->jet_angle = Pi*jet_angle_deg/180; //conversion to radians
+  prob_parm->jet_center[0] = 0.0;
+  prob_parm->jet_center[1] = 0.0;
+  amrex::Real z_over_D = 1.25; // jet is located in z at 1.25 jet diameters 
+  prob_parm->jet_center[2] = prob_parm->jet_rad*2.*z_over_D;
 
   // ------ Initializing jet composition -------
-  PeleLM::prob_parm->Y_jet[H2_ID] = 1.310e-03;
-  PeleLM::prob_parm->Y_jet[O2_ID] = 7.649e-03;
-  PeleLM::prob_parm->Y_jet[H2O_ID] = 2.375e-01;
-  PeleLM::prob_parm->Y_jet[H_ID] = 7.359e-05;
-  PeleLM::prob_parm->Y_jet[O_ID] = 4.639e-04;
-  PeleLM::prob_parm->Y_jet[OH_ID] = 7.724e-03;
-  PeleLM::prob_parm->Y_jet[HO2_ID] = 1.057e-05;
-  PeleLM::prob_parm->Y_jet[H2O2_ID] = 2.291e-06;
+  PeleLM::prob_parm->Y_jet[H_ID] = 6.428e-05;
+  PeleLM::prob_parm->Y_jet[H2_ID] = 1.207e-03;
+  PeleLM::prob_parm->Y_jet[O_ID] = 3.924e-04;
+  PeleLM::prob_parm->Y_jet[OH_ID] = 6.746e-03;
+  PeleLM::prob_parm->Y_jet[OHV_ID] = 2.147e-10;
+  PeleLM::prob_parm->Y_jet[H2O_ID] = 2.393e-01;
+  PeleLM::prob_parm->Y_jet[O2_ID] = 7.019e-03;
   PeleLM::prob_parm->Y_jet[N2_ID] = 7.452e-01;
+  PeleLM::prob_parm->Y_jet[HO2_ID] = 7.768e-06;
+  PeleLM::prob_parm->Y_jet[AR_ID] = 0.000e+00;
+  PeleLM::prob_parm->Y_jet[H2O2_ID] = 1.580e-06;
+  PeleLM::prob_parm->Y_jet[HE_ID] = 0.000e+00;
+
+//  PeleLM::prob_parm->Y_jet[O2_ID] = 0.233;
+//  PeleLM::prob_parm->Y_jet[N2_ID] = 0.767;
 
   // ------ Initializing H2 premixed composition for the main chamber -------
   amrex::Real molefrac[NUM_SPECIES] = {0.0};
@@ -114,6 +126,9 @@ PeleLM::readProbParm() // NOLINT(readability-make-member-function-const)
   molefrac[O2_ID] = 1.0 / ( 1.0 + phi_main / a + 0.79 / 0.21 );
   molefrac[H2_ID] = phi_main * molefrac[O2_ID] / a;
   molefrac[N2_ID] = 1.0 - molefrac[O2_ID] - molefrac[H2_ID];
+  
+//  molefrac[N2_ID] = 0.79;
+//  molefrac[O2_ID] = 0.21;
 
   auto eos = pele::physics::PhysicsType::eos();
 
@@ -133,116 +148,13 @@ PeleLM::readProbParm() // NOLINT(readability-make-member-function-const)
   molefrac[H2_ID] = phi_prechamber * molefrac[O2_ID] / a;
   molefrac[N2_ID] = 1.0 - molefrac[O2_ID] - molefrac[H2_ID];
 
+  //molefrac[N2_ID] = 0.79;
+  //molefrac[O2_ID] = 0.21;
+
   eos.X2Y(molefrac,massfrac);
 
   for (int n = 0; n < NUM_SPECIES; n++){
     (PeleLM::prob_parm->Y_prechamber)[n] = massfrac[n];
   }
 
-  // ----- Read csv file with velocity fluctuations -----
-  
-//  ProbParm local_prob_parm;
-//  std::string datafile;
-//  pp.query("input_name", datafile);
-//  pp.query("input_resolution", local_prob_parm.input_resolution);
-//  int binfmt = 0; // Default is ASCII format
-//  pp.query("urms0", local_prob_parm.urms0);
-//
-//  // Read initial velocity field
-//  const size_t nx = local_prob_parm.input_resolution;
-//  const size_t ny = local_prob_parm.input_resolution;
-//  const size_t nz = local_prob_parm.input_resolution;
-//  amrex::Vector<amrex::Real> data(
-//    nx * ny * nz * 6); /* this needs to be double */
-// 
-//  read_csv(datafile, nx, ny, nz, data);
-//
-//  // Extract position and velocities
-//  amrex::Vector<amrex::Real> xinput(nx * ny * nz);
-//  amrex::Vector<amrex::Real> uinput(nx * ny * nz);
-//  amrex::Vector<amrex::Real> vinput(nx * ny * nz);
-//  amrex::Vector<amrex::Real> winput(nx * ny * nz);
-//  amrex::Vector<amrex::Real> xdiff(nx);
-//  amrex::Vector<amrex::Real> xarray(nx);
-//
-//  for (long i = 0; i < xinput.size(); i++) {
-//    xinput[i] = data[0 + i * 6];
-//    uinput[i] =
-//      data[3 + i * 6] * local_prob_parm.urms0 / local_prob_parm.uin_norm;
-//    vinput[i] =
-//      data[4 + i * 6] * local_prob_parm.urms0 / local_prob_parm.uin_norm;
-//    winput[i] =
-//      data[5 + i * 6] * local_prob_parm.urms0 / local_prob_parm.uin_norm;
-//  }
-//
-//  // Get the xarray table and the differences.
-//  for (long i = 0; i < xarray.size(); i++) {
-//    xarray[i] = xinput[i];
-//  }
-//  std::adjacent_difference(xarray.begin(), xarray.end(), xdiff.begin());
-//  xdiff[0] = xdiff[1];
-//
-//  // Make sure the search array is increasing
-//  if (not std::is_sorted(xarray.begin(), xarray.end())) {
-//    amrex::Abort("Error: non ascending x-coordinate array.");
-//  }
-//
-//  // Pass data to the local_prob_parm
-//  local_prob_parm.Linput = xarray[nx - 1] + 0.5 * xdiff[nx - 1];
-//
-//  local_prob_parm.d_xarray =
-//    (amrex::Real*)amrex::The_Arena()->alloc(nx * sizeof(amrex::Real));
-//  local_prob_parm.d_xdiff =
-//    (amrex::Real*)amrex::The_Arena()->alloc(nx * sizeof(amrex::Real));
-//  local_prob_parm.d_uinput =
-//    (amrex::Real*)amrex::The_Arena()->alloc(nx * ny * nz * sizeof(amrex::Real));
-//  local_prob_parm.d_vinput =
-//    (amrex::Real*)amrex::The_Arena()->alloc(nx * ny * nz * sizeof(amrex::Real));
-//  local_prob_parm.d_winput =
-//    (amrex::Real*)amrex::The_Arena()->alloc(nx * ny * nz * sizeof(amrex::Real));
-//
-//  for (unsigned long i = 0; i < nx; i++) {
-//    local_prob_parm.d_xarray[i] = xarray[i];
-//    local_prob_parm.d_xdiff[i] = xdiff[i];
-//  }
-//  for (unsigned long i = 0; i < nx * ny * nz; i++) {
-//    local_prob_parm.d_uinput[i] = uinput[i];
-//    local_prob_parm.d_vinput[i] = vinput[i];
-//    local_prob_parm.d_winput[i] = winput[i];
-//  }
-//
-//  // Initialize PeleLM::prob_parm container
-//  PeleLM::prob_parm->d_xarray =
-//    (amrex::Real*)amrex::The_Arena()->alloc(nx * sizeof(amrex::Real));
-//  PeleLM::prob_parm->d_xdiff =
-//    (amrex::Real*)amrex::The_Arena()->alloc(nx * sizeof(amrex::Real));
-//  PeleLM::prob_parm->d_uinput =
-//    (amrex::Real*)amrex::The_Arena()->alloc(nx * ny * nz * sizeof(amrex::Real));
-//  PeleLM::prob_parm->d_vinput =
-//    (amrex::Real*)amrex::The_Arena()->alloc(nx * ny * nz * sizeof(amrex::Real));
-//  PeleLM::prob_parm->d_winput =
-//    (amrex::Real*)amrex::The_Arena()->alloc(nx * ny * nz * sizeof(amrex::Real));
-//
-//  // Copy into PeleLM::prob_parm: CPU only for now
-//  PeleLM::prob_parm->d_xarray =
-//    (amrex::Real*)amrex::The_Arena()->alloc(nx * sizeof(amrex::Real));
-//  std::memcpy(
-//    &PeleLM::prob_parm->d_xarray, &local_prob_parm.d_xarray,
-//    sizeof(local_prob_parm.d_xarray));
-//  std::memcpy(
-//    &PeleLM::prob_parm->d_xdiff, &local_prob_parm.d_xdiff,
-//    sizeof(local_prob_parm.d_xdiff));
-//  std::memcpy(
-//    &PeleLM::prob_parm->d_uinput, &local_prob_parm.d_uinput,
-//    sizeof(local_prob_parm.d_uinput));
-//  std::memcpy(
-//    &PeleLM::prob_parm->d_vinput, &local_prob_parm.d_vinput,
-//    sizeof(local_prob_parm.d_vinput));
-//  std::memcpy(
-//    &PeleLM::prob_parm->d_winput, &local_prob_parm.d_winput,
-//    sizeof(local_prob_parm.d_winput));
-//  PeleLM::prob_parm->Linput = local_prob_parm.Linput;
-//  PeleLM::prob_parm->input_resolution = local_prob_parm.input_resolution;
-//  PeleLM::prob_parm->urms0 = local_prob_parm.urms0;
-//  PeleLM::prob_parm->uin_norm = local_prob_parm.uin_norm;
 }

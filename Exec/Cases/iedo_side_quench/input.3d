@@ -1,37 +1,46 @@
 #----------------------DOMAIN DEFINITION------------------------
 geometry.is_periodic = 0 0 0              # For each dir, 0: non-perio, 1: periodic
 geometry.coord_sys   = 0                  # 0 => cart, 1 => RZ
-geometry.prob_lo     = -0.030 -0.025 0.0       # x_lo y_lo (z_lo)
-geometry.prob_hi     =  0.070  0.025 0.025       # x_hi y_hi (z_hi)
+geometry.prob_lo     =  0.0    -0.0125 0.0       # x_lo y_lo (z_lo)
+geometry.prob_hi     =  0.025  0.0125 0.00625       # x_hi y_hi (z_hi)
 
 # >>>>>>>>>>>>>  BC FLAGS <<<<<<<<<<<<<<<<
 # Interior, Inflow, Outflow, Symmetry,
 # SlipWallAdiab, NoSlipWallAdiab, SlipWallIsotherm, NoSlipWallIsotherm
-peleLM.lo_bc = Outflow Outflow Inflow
+peleLM.lo_bc = Inflow Outflow Outflow
 peleLM.hi_bc = NoSlipWallIsotherm Outflow NoSlipWallIsotherm
 
 
 #-------------------------AMR CONTROL----------------------------
-amr.n_cell          = 128 64 32      # Level 0 number of cells in each direction   
+amr.n_cell          = 128 128 32       # Level 0 number of cells in each direction   
 amr.v               = 1                # AMR verbose
-amr.max_level       = 3                # maximum level number allowed
+amr.max_level       = 4                # maximum level number allowed
 amr.ref_ratio       = 2 2 2 2          # refinement ratio
 amr.regrid_int      = 10               # how often to regrid
 amr.n_error_buf     = 2 2 2 2          # number of buffer cells in error est
-amr.grid_eff        = 0.7              # what constitutes an efficient grid
+amr.grid_eff        = 0.9              # what constitutes an efficient grid
 amr.blocking_factor = 16               # block factor in grid generation (min box size)
 amr.max_grid_size   = 32               # max box size
-
+amr.max_wall_time   = 1.95            # in hours
 
 #--------------------------- Problem -------------------------------
-prob.P_mean = 2.8e+6
+prob.P_mean = 2.0e+6
 prob.T_mean = 700.0
 prob.T_wall = 500.0
-prob.T_jet = 2775.68
-prob.V_jet = 400.0
-prob.jet_rad = 0.8e-3
+prob.T_jet = 2702.43
+prob.V_jet = 200.0
+prob.jet_rad = 0.4e-3
 prob.phi_chamber = 0.588
 prob.phi_prechamber = 1.0
+pmf.datafile = "jet_velocity.csv"
+transport.use_soret = 1
+
+# -- Auxiliary scalars --
+peleLM.aux_vars = mixfrac
+peleLM.mixfrac.advect = 1
+peleLM.mixfrac.Schmidt = -1.0
+
+#------------------------
 
 #prob.input_name       = hit_ic_4_16.dat
 #prob.input_resolution = 16
@@ -40,22 +49,32 @@ prob.phi_prechamber = 1.0
 
 #Injection time parameters
 prob.t_si = 1.0e-5 #time start of injection of fresh mixture from pre-chamber
-prob.t_ei = 6.0e-4 #time end of injection 
-prob.Ku   = 1.0e-5 #parameter controling transition width between zero and maximum velocity 
-prob.t_tr = 3.0e-4 #time start of injection of combustion products from pre-chamber
+prob.t_ei = 0.000675 #time end of injection 
+prob.Ku   = 1.0e-8 #parameter controling transition width between zero and maximum velocity 
+prob.t_tr = 3.81944e-4 #time start of injection of combustion products from pre-chamber
 prob.Ktr  = 6.5e-8 #parameter controling transition width between fresh mixture and products
-prob.jet_angle = 30. #jet angle in degrees. The wall normal is 90 degrees
+prob.jet_angle = 25. #jet angle in degrees. The wall normal is 90 degrees
+
 
 # -- Turbulent inflow
-# turbinflows = lowZ
-turbinflow.lowZ.turb_file      = /lustre/scratch/bsouzas/PeleLMeX/Exec/Cases/NTNU_TNF_flame/Turb_TNF
+turbinflows = lowZ
+turbinflow.lowZ.turb_file      = TurbTEST
 turbinflow.lowZ.dir            = 2
 turbinflow.lowZ.side           = low
-turbinflow.lowZ.turb_scale_loc = 1.0
-turbinflow.lowZ.turb_scale_vel = 50.0
+turbinflow.lowZ.turb_scale_loc = 5.697 #scaled up from Wonsik's jet flame. Jet diam is 4.239 times bigger for iedo case
+turbinflow.lowZ.turb_scale_vel = 1.887 #
 turbinflow.lowZ.turb_center    = 0.0 0.0
-turbinflow.lowZ.turb_conv_vel  = 16.
+turbinflow.lowZ.turb_conv_vel  = 100.
 turbinflow.lowZ.turb_nplane    = 32
+
+# -- #Wonsik's set up for turbinflow --
+#turbinflow.lowZ.dir            = 2
+#turbinflow.lowZ.side           = low
+#turbinflow.lowZ.turb_scale_loc = 1.3440 ##0.742877493
+#turbinflow.lowZ.turb_scale_vel = 0.445365017 ##0.413656181
+#turbinflow.lowZ.turb_center    = 0.0 0.0
+#turbinflow.lowZ.turb_conv_vel  = 30.9 ##28.7
+#turbinflow.lowZ.turb_nplane    = 48
 
 #-------------------------PeleLM CONTROL----------------------------
 peleLM.v = 3
@@ -80,8 +99,9 @@ peleLM.closed_chamber = 0
 
 godunov.use_ppm = 0
 
-amr.stop_time = 8.0e-4
-amr.max_step = 0
+amr.stop_time = 1.5e-3
+# amr.stop_time = 0.75e-4
+# amr.max_step = 00
 amr.dt_shrink = 1.0
 amr.dt_change_max = 1.1
 amr.cfl = 0.5
@@ -92,37 +112,40 @@ peleLM.deltaT_crashIfFailing = 0
 
 #-------------------------IO CONTROL----------------------------
 amr.checkpoint_files_output = 1
-# amr.restart             = chk10500
+# amr.restart             = chk06215
 amr.check_file          = chk          # root name of checkpoint file
-amr.check_int           = 250           # number of timesteps between checkpoints
+amr.check_int           = 150           # number of timesteps between checkpoints
 amr.plot_file           = plt          # root name of plot file
 # amr.plot_int            = 50          # number of timesteps between plot files
 amr.plot_per            = 2.e-5
-amr.derive_plot_vars    = mag_vel mag_vort avg_pressure mass_fractions
+amr.derive_plot_vars    = mag_vel mag_vort avg_pressure mass_fractions 
 amr.grid_log            = grdlog       # name of grid logging file
 
+# Set to every MPI task write their own file
+# amr.plot_nfiles = -1
+# amr.checkpoint_nfiles = -1
 #--------------------REFINEMENT CONTROL------------------------
-amr.refinement_indicators = inBox gradT prodSide vort hrr
+amr.refinement_indicators = inBox gradT vort
 
-amr.prodSide.max_level = 2
+amr.prodSide.max_level = 3
 amr.prodSide.value_greater = 1.0e-1
 amr.prodSide.field_name = Y(H2O)
 
 amr.vort.max_level = 5
-amr.vort.value_greater = 2.0e5
+amr.vort.value_greater = 1.0e5
 amr.vort.field_name = mag_vort
 
 amr.hrr.max_level = 5
-amr.hrr.value_greater = 50.0
+amr.hrr.value_greater = 1.0e8
 amr.hrr.field_name = HeatRelease
 
-amr.gradT.max_level = 2
+amr.gradT.max_level = 5
 amr.gradT.adjacent_difference_greater = 30
 amr.gradT.field_name = temp
 
 amr.inBox.max_level     = 5
-amr.inBox.in_box_lo     =   -1.0e-3      -1.0e-3      0.0e-3
-amr.inBox.in_box_hi     =    1.0e-3       1.0e-3      0.5e-3
+amr.inBox.in_box_lo     =   0.0      -1.5e-3      0.5e-3
+amr.inBox.in_box_hi     =   0.001      1.5e-3      1.5e-3
 
 # --------------- INPUTS TO CHEMISTRY REACTOR ---------------
 peleLM.do_react = 1
@@ -134,7 +157,8 @@ peleLM.typical_values_reset_int = 10
 #ode.rtol = 1.0e-6                     # Relative tolerance of the chemical solve
 #ode.atol = 1.0e-5                     # Absolute tolerance factor applied on typical values
 # cvode.solve_type = GMRES     # CVODE Linear solve type (for Newton direction)
-cvode.solve_type = denseAJ_direct        # CVODE Linear solve type (for Newton direction)
+cvode.solve_type = magma_direct        # CVODE Linear solve type (for Newton direction)
+ode.clean_init_massfrac = 1
 # cvode.max_order  = 4                  # CVODE max BDF order.
 
 
