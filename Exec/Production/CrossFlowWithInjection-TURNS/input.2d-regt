@@ -27,9 +27,11 @@ prob.T_mean = 298.0
 prob.P_mean = 101325.0
 prob.meanFlowMag = 2.3
 prob.meanFlowDir = 2
-prob.inject_loc = 0.0 0.102 0.0
-prob.injection_diam = 0.00412
-
+prob.jet_loc = 0.0 0.102 0.0
+prob.jet_radius = 0.02 #0.00206
+prob.jet_vel = 3.0
+prob.jet_T = 298.
+prob.jet_Yfuel = 1.0
 
 #------------  INPUTS TO CONSTANT TRANSPORT -----------------
 transport.const_viscosity        = 0.0001 
@@ -42,22 +44,32 @@ peleLM.v = 1
 peleLM.incompressible = 0
 peleLM.rho = 1.17
 peleLM.mu = 0.0003
+peleLM.EBinflow = 1
 
 amr.plot_int = 20
 amr.max_step = 2000
 amr.dt_shrink = 0.1
 amr.stop_time = 0.2
 amr.cfl = 0.7
-amr.derive_plot_vars = avg_pressure mag_vort
+amr.derive_plot_vars = avg_pressure mag_vort mag_vel mass_fractions
 
 #------------------------- EB SETUP -----------------------------
 eb2.geom_type = cylinder
-eb2.cylinder_radius     = 0.00306 #1mm wall between inflow jet and cylinder 
+eb2.cylinder_radius     = 0.0306 #3.06mm radius gives a 1mm wall between inflow jet and cylinder 
 eb2.cylinder_direction  = 0
 eb2.cylinder_center     = 0.0 0.10406 0.0
+eb2.cylinder_height     = 0.2
 eb2.cylinder.internal_flow    = false
 eb2.cylinder_has_fluid_inside = 0
 eb2.small_volfrac = 1.0e-6
+
+#------------------------- CHEMISTRY SOLVER  -----------------------------
+peleLM.chem_integrator = "ReactorCvode"
+peleLM.use_typ_vals_chem = 1          # Use species/temp typical values in CVODE
+# ode.rtol = 1.0e-7                     # Relative tolerance of the chemical solve
+# ode.atol = 1.0e-6                     # Absolute tolerance factor applied on typical values
+cvode.solve_type = denseAJ_direct     # CVODE Linear solve type (for Newton direction) 
+cvode.max_order  = 4                  # CVODE max BDF order. 
 
 #--------------------REFINEMENT CONTROL------------------------
 #amr.refinement_indicators = temp

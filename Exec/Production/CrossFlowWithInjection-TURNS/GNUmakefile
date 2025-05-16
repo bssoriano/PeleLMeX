@@ -27,12 +27,13 @@ THREAD_SANITIZER = FALSE
 
 # PeleLMeX
 USE_PLASMA = FALSE
-CEXE_headers += EBUserDefined.H
+# CEXE_headers += EBUserDefined.H
 
 # PelePhysics
-Chemistry_Model = air
+Chemistry_Model = chem-CH4-2step
 Eos_Model = Fuego
-Transport_Model = Constant
+Transport_Model = Simple
 
+PELE_PHYSICS_HOME ?= ../../../../PelePhysics/
 PELE_HOME ?= ../../..
 include $(PELE_HOME)/Exec/Make.PeleLMeX

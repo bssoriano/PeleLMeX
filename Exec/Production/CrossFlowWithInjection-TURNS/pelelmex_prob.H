@@ -103,7 +103,7 @@ bcnormal(
   pele::physics::PMF::PmfData::DataContainer const* /*pmf_data*/)
 {
 
-  amrex::Real r = sqrt(pow((y_center-x[1]),2)+pow((z_center-x[2]),2));
+  amrex::Real r = sqrt(pow((prob_parm.jet_loc[1]-x[1]),2)+pow((prob_parm.jet_loc[2]-x[2]),2));
   
   amrex::Real massfrac[NUM_SPECIES] = {0.0};
 
@@ -115,7 +115,7 @@ bcnormal(
                  , s_ext[VELZ] = 0.0);
     break;
   case 2:
-    AMREX_D_TERM(s_ext[VELY] = prob_parm.meanFlowMag;,if (x[1] >= prob_parm.inject_loc[1] && x[1] <= prob_parm.inject_loc[1]+prob_parm.injection_diam) {s_ext[VELX] = prob_parm.lowFlowMag;} ;
+    AMREX_D_TERM(s_ext[VELY] = prob_parm.meanFlowMag;,if (r <= prob_parm.jet_radius) {s_ext[VELX] = prob_parm.jet_vel;} ;
                  , s_ext[VELZ] = 0.0);
     break;
   case 3:
@@ -153,13 +153,15 @@ struct EBhandle {
                    amrex::GeometryData const& /*geomdata*/,
                    ProbParm const& prob_parm) const
     {
-        if ( xEBface[0] > 0.0098 ) {
-          EBflagType = pelelmex::BCTypeEB::wall_isot;
-        } else {
-          if (std::abs(xEBface[0]) <= 0.0015) {
+#if (AMREX_SPACEDIM == 2)
+        amrex::Real r = sqrt(pow((prob_parm.jet_loc[1]-xEBface[1]),2));
+#elif (AMREX_SPACEDIM == 3)
+        amrex::Real r = sqrt(pow((prob_parm.jet_loc[1]-xEBface[1]),2)+pow((prob_parm.jet_loc[2]-xEBface[2]),2));
+#endif
+	if (r <= prob_parm.jet_radius) {
             EBflagType = pelelmex::BCTypeEB::inflow;
-          }
         }
+        
     }
   
     AMREX_GPU_DEVICE
@@ -172,22 +174,30 @@ struct EBhandle {
                      amrex::GeometryData const& /*geomdata*/,
                      ProbParm const& prob_parm) const
     {
+#if (AMREX_SPACEDIM == 2)
+        amrex::Real r = sqrt(pow((prob_parm.jet_loc[1]-xEBface[1]),2));
+#elif (AMREX_SPACEDIM == 3)
+        amrex::Real r = sqrt(pow((prob_parm.jet_loc[1]-xEBface[1]),2)+pow((prob_parm.jet_loc[2]-xEBface[2]),2));
+#endif
         // Isothermal wall
-        s_ext[TEMP] = prob_parm.Twall;
+        //s_ext[TEMP] = prob_parm.Twall;
 
         // Inflow
-        if (std::abs(xEBface[0]) <= 0.0015) {
+        if (r <= prob_parm.jet_radius) {
+
             auto eos = pele::physics::PhysicsType::eos();
-            s_ext[VELX] = 0.0;
-            s_ext[VELY] = prob_parm.EBinflow_vel;
-            amrex::Real massfrac[NUM_SPECIES] = {0.0};
-            massfrac[CH4_ID] = prob_parm.EBinflow_Yfuel;
+            s_ext[VELX] = prob_parm.jet_vel;
+            s_ext[VELY] = 0.0;
+            s_ext[VELZ] = 0.0;
+            
+	    amrex::Real massfrac[NUM_SPECIES] = {0.0};
+            massfrac[CH4_ID] = prob_parm.jet_Yfuel;
             massfrac[O2_ID] = (1.0 - massfrac[CH4_ID]) * 0.233;
             massfrac[N2_ID] =  1.0 - massfrac[CH4_ID] - massfrac[O2_ID];
 
             amrex::Real P_cgs = prob_parm.P_mean * 10.0;
 
-            s_ext[TEMP] = prob_parm.EBinflow_T;
+            s_ext[TEMP] = prob_parm.jet_T;
             amrex::Real rho_cgs, RhoH_temp;
             eos.PYT2R(P_cgs, massfrac, s_ext[TEMP], rho_cgs);
             s_ext[DENSITY] = rho_cgs * 1.0e3;
