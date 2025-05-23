@@ -104,7 +104,7 @@ pelelmex_initdata(
           //nu = 3.99d0,    !for Methane , 3.51d0 for n-Heptane
         //YF_b = 1.0,
         //YO_oo = 0.21d0,
-        double YF_b = 0.1;
+        double YF_b = 0.06;
         double S_IC = 3.99 * YF_b / 0.21;
 
         //Q = (q_dim * YF_b) / (cp_tot * Too) !Heat of combustion
