@@ -15,6 +15,8 @@ PeleLM::readProbParm() // NOLINT(readability-make-member-function-const)
   pp.query("jet_vel",prob_parm->jet_vel);
   pp.query("jet_T",prob_parm->jet_T);
   pp.query("jet_Yfuel",prob_parm->jet_Yfuel);
+  pp.query("t_tr",prob_parm->t_tr);
+  pp.query("Ktr",prob_parm->Ktr);
 
   amrex::Vector<amrex::Real> local_inject_loc(
     AMREX_SPACEDIM, std::numeric_limits<amrex::Real>::lowest());
@@ -23,6 +25,13 @@ PeleLM::readProbParm() // NOLINT(readability-make-member-function-const)
   for (int i = 0; i < AMREX_SPACEDIM; i++) {
     PeleLM::prob_parm->jet_loc[i] = local_inject_loc[i];
   }
+  PeleLM::prob_parm->Y_prod[O2_ID]  = 0.005135996986697483;
+  PeleLM::prob_parm->Y_prod[H2O_ID] = 0.12399164843694147;
+  PeleLM::prob_parm->Y_prod[CH4_ID] = 0.0;
+  PeleLM::prob_parm->Y_prod[CO_ID]  = 0.008763631883090546;
+  PeleLM::prob_parm->Y_prod[CO2_ID] = 0.1373434481760564;
+  PeleLM::prob_parm->Y_prod[N2_ID]  = 0.7247652745221234;
+
 
   // if (!m_incompressible) {
   //    auto& trans_parm = PeleLM::trans_parms.host_parm();

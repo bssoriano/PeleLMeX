@@ -2,6 +2,7 @@
 #define PELELM_PROB_PARM_H
 
 #include <AMReX_REAL.H>
+#include <PelePhysics.H>
 #include <AMReX_GpuMemory.H>
 
 using namespace amrex::literals;
@@ -19,6 +20,9 @@ struct ProbParm : amrex::Gpu::Managed
   amrex::Real jet_vel = 0.0;
   amrex::Real jet_T = 0.0;
   amrex::Real jet_Yfuel = 0.0;
+  amrex::Real Ktr  = 0.0_rt;
+  amrex::Real t_tr = 0.0_rt;
+  amrex::GpuArray<amrex::Real, NUM_SPECIES> Y_prod = {{0.0}};
 
 };
 #endif

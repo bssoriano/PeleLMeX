@@ -170,7 +170,7 @@ struct EBhandle {
                      const amrex::Real EBfaceNormal[AMREX_SPACEDIM], // Outward normal
                      const amrex::Real s_in[NVAR],
                      amrex::Real s_ext[NVAR],
-                     const amrex::Real /*time*/,
+                     const amrex::Real time,
                      amrex::GeometryData const& /*geomdata*/,
                      ProbParm const& prob_parm) const
     {
@@ -196,8 +196,16 @@ struct EBhandle {
             massfrac[N2_ID] =  1.0 - massfrac[CH4_ID] - massfrac[O2_ID];
 
             amrex::Real P_cgs = prob_parm.P_mean * 10.0;
+            
+            //s_ext[TEMP] = prob_parm.jet_T;
+	    amrex::Real fb = 0.5*(tanh((time-prob_parm.t_tr)/prob_parm.Ktr)+1);
+	    amrex::Real T = (1.-fb)*1800. + fb*prob_parm.jet_T;
+	    s_ext[TEMP] = T;
 
-            s_ext[TEMP] = prob_parm.jet_T;
+	    for (int n = 0; n < NUM_SPECIES; n++) {
+                massfrac[n] = fb * massfrac[n] + (1.0 - fb) * prob_parm.Y_prod[n];
+            }
+
             amrex::Real rho_cgs, RhoH_temp;
             eos.PYT2R(P_cgs, massfrac, s_ext[TEMP], rho_cgs);
             s_ext[DENSITY] = rho_cgs * 1.0e3;
