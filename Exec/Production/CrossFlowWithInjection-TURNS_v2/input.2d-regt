@@ -1,0 +1,125 @@
+#----------------------DOMAIN DEFINITION------------------------
+geometry.is_periodic = 0 0                # For each dir, 0: non-perio, 1: periodic
+geometry.coord_sys   = 0                  # 0 => cart, 1 => RZ
+geometry.prob_lo     = 0.0 0.0         # x_lo y_lo (z_lo)
+geometry.prob_hi     =  0.7 1.4   # x_hi y_hi (z_hi)
+
+# >>>>>>>>>>>>>  BC FLAGS <<<<<<<<<<<<<<<<
+# Interior, Inflow, Outflow, Symmetry,
+# SlipWallAdiab, NoSlipWallAdiab, SlipWallIsotherm, NoSlipWallIsotherm
+peleLM.lo_bc = SlipWallAdiab  SlipWallAdiab  
+peleLM.hi_bc = Outflow Outflow
+
+
+#-------------------------AMR CONTROL----------------------------
+amr.n_cell          = 128 256         # Level 0 number of cells in each direction   
+amr.v               = 1                # AMR verbose
+amr.max_level       = 2                # maximum level number allowed
+amr.ref_ratio       = 2 2 2 2          # refinement ratio
+amr.regrid_int      = 2                # how often to regrid
+amr.n_error_buf     = 1 1 2 2          # number of buffer cells in error est
+amr.grid_eff        = 0.7              # what constitutes an efficient grid
+amr.blocking_factor = 32               # block factor in grid generation (min box size)
+amr.max_grid_size   = 64               # max box size
+
+#--------------------------- Problem -------------------------------
+prob.T_mean = 298.0
+prob.P_mean = 101325.0
+prob.meanFlowMag = 2.3
+prob.meanFlowDir = 2
+prob.jet_loc = 0.0 0.272 0.0
+prob.jet_radius = 0.00206 #2.06mm inner bunner radius
+prob.jet_vel = 33.0 #OJO CH4 JET inlet velocity!!!!
+prob.jet_T = 398. #OJO CH4 JET TEMPERATURE!!!!
+prob.jet_Yfuel = 1.0
+prob.Flame_IC = 1
+
+
+#------------  INPUTS TO CONSTANT TRANSPORT -----------------
+transport.const_viscosity        = 0.0001 
+transport.const_bulk_viscosity   = 0.0 
+transport.const_conductivity     = 0.0 
+transport.const_diffusivity      = 0.0 
+
+#-------------------------PeleLM CONTROL----------------------------
+peleLM.v = 1
+peleLM.incompressible = 0
+#peleLM.sdc_iterMax    = 1                 # Number of SDC iterations
+#peleLM.num_init_iter = 3                  # Number of initial iterations
+peleLM.rho = 1.17
+peleLM.mu = 0.0003
+peleLM.EBinflow = 1
+
+#---------------------- Temporal CONTROL -------------------------
+#peleLM.do_temporals = 1                   # Turn temporals ON/OFF
+#peleLM.temporal_int = 10                  # Frequency of temporals
+#peleLM.do_extremas = 1                    # Compute state extremas
+#peleLM.do_mass_balance = 1                # Compute mass balance
+#peleLM.do_species_balance = 1             # Compute species balance
+
+#---------------------- Time Stepping CONTROL --------------------
+amr.max_step = 300                         # Maximum number of time steps
+amr.stop_time = 0.5                      # final simulation physical time
+amr.cfl = 0.2                             # CFL number for hyperbolic system
+amr.dt_shrink = 0.1                     # Scale back initial timestep
+amr.dt_change_max = 1.1                   # Maximum dt increase btw successive steps
+
+#---------------------- IO CONTROL -------------------------------
+amr.plot_int = 20                         # Frequency of pltfile output
+amr.check_int = 2000                      # Frequency of checkpoint output
+#amr.restart = chk02000                   # Restart checkpoint file
+amr.derive_plot_vars = avg_pressure mag_vort mag_vel mass_fractions
+
+#-----------------------DIFFUSION AND LES MODEL CONTROL-----------------------
+
+peleLM.les_model = Smagorinsky              # [OPT, DEF="None"] Model to compute turbulent viscosity: None, Smagorinsky, WALE, Sigma
+peleLM.les_cs_smag = 0.18              # [OPT, DEF=0.18] If using Smagorinsky LES model, provides model coefficient
+peleLM.les_v = 1                       # [OPT, DEF=0] Verbosity level for LES model
+peleLM.plot_les = 1                    # [OPT, DEF=0] If doing LES, whether to plot the turbulent viscosity
+
+#------------------------- EB SETUP -----------------------------
+eb2.geom_type = cylinder
+eb2.cylinder_radius     = 0.00555 #5.55mm radius gives a 3,5mm wall between inflow jet and cylinder 
+eb2.cylinder_direction  = 0
+eb2.cylinder_center     = 0.0 0.272 0.0
+eb2.cylinder_height     = 0.272
+eb2.cylinder.internal_flow    = false
+eb2.cylinder_has_fluid_inside = 0
+eb2.small_volfrac = 1.0e-6
+
+#------------------------- CHEMISTRY SOLVER  -----------------------------
+peleLM.chem_integrator = "ReactorCvode"
+peleLM.use_typ_vals_chem = 1          # Use species/temp typical values in CVODE
+# ode.rtol = 1.0e-7                     # Relative tolerance of the chemical solve
+# ode.atol = 1.0e-6                     # Absolute tolerance factor applied on typical values
+cvode.solve_type = denseAJ_direct     # CVODE Linear solve type (for Newton direction) 
+cvode.max_order  = 4                  # CVODE max BDF order. 
+
+#--------------------REFINEMENT CONTROL------------------------
+
+#amr.HR.max_level = 2
+#amr.HR.value_greater = 1.e6
+#amr.HR.field_name = HeatRelease
+#
+amr.refinement_indicators = temp
+amr.temp.max_level     = 2
+amr.temp.value_greater = 1800
+amr.temp.field_name    = temp
+
+#amrex.fpe_trap_invalid = 1
+#amrex.fpe_trap_zero = 1
+#amrex.fpe_trap_overflow = 1
+
+##--------------------REFINEMENT CONTROL------------------------
+## Refinement according to the vorticity
+#amr.refinement_indicators     = lowvort highvort
+#amr.lowvort.max_level         = 1
+#amr.lowvort.value_less        = -500.0
+#amr.lowvort.field_name        = mag_vort
+#
+#amr.highvort.max_level        = 1
+#amr.highvort.value_greater    = 500.0
+#amr.highvort.field_name        = mag_vort
+#
+## Refine the EB
+#ns.refine_cutcells            = 1
