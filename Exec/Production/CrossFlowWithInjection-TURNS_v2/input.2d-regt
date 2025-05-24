@@ -59,11 +59,11 @@ peleLM.EBinflow = 1
 
 #---------------------- Time Stepping CONTROL --------------------
 amr.max_step = 300                         # Maximum number of time steps
-amr.stop_time = 0.5                      # final simulation physical time
-amr.cfl = 0.4                             # CFL number for hyperbolic system
-amr.fixed_dt      = 5e-8               # [OPT] optional fixed dt (override CFL condition)
-amr.dt_shrink = 0.1                     # Scale back initial timestep
-amr.dt_change_max = 1.1                   # Maximum dt increase btw successive steps
+amr.stop_time = 0.5                        # final simulation physical time
+amr.cfl = 0.4                              # CFL number for hyperbolic system
+amr.fixed_dt      = 5e-8                   # [OPT] optional fixed dt (override CFL condition)
+amr.dt_shrink = 0.1                        # Scale back initial timestep
+amr.dt_change_max = 1.1                    # Maximum dt increase btw successive steps
 
 #---------------------- IO CONTROL -------------------------------
 amr.plot_int = 20                         # Frequency of pltfile output
