@@ -7,8 +7,8 @@ geometry.prob_hi     =  0.7 1.4   # x_hi y_hi (z_hi)
 # >>>>>>>>>>>>>  BC FLAGS <<<<<<<<<<<<<<<<
 # Interior, Inflow, Outflow, Symmetry,
 # SlipWallAdiab, NoSlipWallAdiab, SlipWallIsotherm, NoSlipWallIsotherm
-peleLM.lo_bc = SlipWallAdiab  SlipWallAdiab  
-peleLM.hi_bc = Outflow Outflow
+peleLM.lo_bc = SlipWallAdiab Inflow  
+peleLM.hi_bc = SlipWallAdiab Outflow
 
 
 #-------------------------AMR CONTROL----------------------------
