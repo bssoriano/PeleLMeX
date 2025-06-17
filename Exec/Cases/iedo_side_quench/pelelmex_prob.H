@@ -79,7 +79,7 @@ pelelmex_initdata(
 
   // -----------------------------------------
   state(i, j, k, VELX) = 0.0;
-  state(i, j, k, VELY) = 0.0;
+  state(i, j, k, VELY) = 0.1;
   state(i, j, k, VELZ) = 0.0;
 
   auto eos = pele::physics::PhysicsType::eos();
@@ -219,6 +219,10 @@ bcnormal(
 	  amrex::Real scaled_velx_fluct = s_ext[VELX]*vel_jet/100.; //100. is the maximum jet velocity
 	  amrex::Real scaled_vely_fluct = s_ext[VELY]*vel_jet/100.;
 	  amrex::Real scaled_velz_fluct = s_ext[VELZ]*vel_jet/100.;
+          
+	  //if(scaled_vely_fluct > 0.0){
+	  //   printf("U = %f V = %f W = %f \n", scaled_velx_fluct,scaled_vely_fluct,scaled_velz_fluct);
+	  //}
 
           s_ext[VELX] = scaled_velx_fluct + std::cos(prob_parm.jet_angle)*vel_jet;
           s_ext[VELY] = scaled_vely_fluct;
@@ -230,6 +234,34 @@ bcnormal(
           s_ext[VELZ] = 0.0;
       }
 #endif
+  }
+  
+  else if (idir == 1 && sgn == 1) {
+    s_ext[TEMP] = prob_parm.T_mean;
+      
+    amrex::Real rho_cgs, P_cgs, RhoH_temp;
+    P_cgs = prob_parm.P_mean * 10.0;
+
+
+    eos.PYT2R(P_cgs, Y_air, s_ext[TEMP], rho_cgs);
+    s_ext[DENSITY] = rho_cgs * 1.0e3;
+
+    eos.TY2H(s_ext[TEMP], massfrac, RhoH_temp);
+    s_ext[RHOH] =
+        RhoH_temp * 1.0e-4 * s_ext[DENSITY]; // CGS -> MKS conversion
+
+    for (int n = 0; n < NUM_SPECIES; n++) {
+        s_ext[FIRSTSPEC + n] = Y_air[n] * s_ext[DENSITY];
+    }
+    
+//    amrex::Real scaled_velx_fluct = s_ext[VELX];
+//    amrex::Real scaled_vely_fluct = s_ext[VELY];
+//    amrex::Real scaled_velz_fluct = s_ext[VELZ];
+
+//    s_ext[VELX] = scaled_velz_fluct;
+//    s_ext[VELY] = scaled_velz_fluct;
+//    s_ext[VELZ] = scaled_velx_fluct;
+
   }
   
 #if (AMREX_SPACEDIM == 2)

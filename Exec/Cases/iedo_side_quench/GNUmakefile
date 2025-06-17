@@ -16,7 +16,7 @@ USE_GPROF = FALSE
 # Performance
 USE_MPI = TRUE
 USE_OMP = FALSE
-USE_CUDA = FALSE
+USE_CUDA = TRUE
 USE_HIP = FALSE
 USE_SYCL = FALSE
 
@@ -28,11 +28,13 @@ THREAD_SANITIZER = FALSE
 # PeleLMeX
 
 # PelePhysics
-Chemistry_Model = LiDryer
+# Chemistry_Model = air
+Chemistry_Model = H2_Dario_final
 Eos_Model = Fuego
 Transport_Model = Simple
 PELE_CVODE_FORCE_YCORDER = TRUE
 
+# PELE_HOME ?= /home/bsouzas/ITV-RWTH/PeleLMeX/
 PELE_HOME      ?= /home/bsouzas/my_LMeX/PeleLMeX
 PELE_PHYSICS_HOME ?= /home/bsouzas/my_LMeX/PelePhysics
 include $(PELE_HOME)/Exec/Make.PeleLMeX

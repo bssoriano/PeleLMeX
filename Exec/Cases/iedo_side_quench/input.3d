@@ -7,21 +7,20 @@ geometry.prob_hi     =  0.025  0.0125 0.00625       # x_hi y_hi (z_hi)
 # >>>>>>>>>>>>>  BC FLAGS <<<<<<<<<<<<<<<<
 # Interior, Inflow, Outflow, Symmetry,
 # SlipWallAdiab, NoSlipWallAdiab, SlipWallIsotherm, NoSlipWallIsotherm
-peleLM.lo_bc = Inflow Outflow Outflow
+peleLM.lo_bc = Inflow Inflow NoSlipWallAdiab
 peleLM.hi_bc = NoSlipWallIsotherm Outflow NoSlipWallIsotherm
 
-
 #-------------------------AMR CONTROL----------------------------
-amr.n_cell          = 128 128 32       # Level 0 number of cells in each direction   
+amr.n_cell          = 384 384 96       # Level 0 number of cells in each direction   
 amr.v               = 1                # AMR verbose
-amr.max_level       = 4                # maximum level number allowed
+amr.max_level       = 1                # maximum level number allowed
 amr.ref_ratio       = 2 2 2 2          # refinement ratio
 amr.regrid_int      = 10               # how often to regrid
 amr.n_error_buf     = 2 2 2 2          # number of buffer cells in error est
 amr.grid_eff        = 0.9              # what constitutes an efficient grid
 amr.blocking_factor = 16               # block factor in grid generation (min box size)
 amr.max_grid_size   = 32               # max box size
-amr.max_wall_time   = 1.95            # in hours
+# amr.max_wall_time   = 1.95            # in hours
 
 #--------------------------- Problem -------------------------------
 prob.P_mean = 2.0e+6
@@ -36,7 +35,7 @@ pmf.datafile = "jet_velocity.csv"
 transport.use_soret = 1
 
 # -- Auxiliary scalars --
-peleLM.aux_vars = mixfrac
+# peleLM.aux_vars = mixfrac
 peleLM.mixfrac.advect = 1
 peleLM.mixfrac.Schmidt = -1.0
 
@@ -57,13 +56,17 @@ prob.jet_angle = 25. #jet angle in degrees. The wall normal is 90 degrees
 
 
 # -- Turbulent inflow
-turbinflows = lowZ
+turbinflows = lowZ lowY
 turbinflow.lowZ.turb_file      = TurbTEST
-turbinflow.lowZ.dir            = 2
+turbinflow.lowZ.dir            = 0
 turbinflow.lowZ.side           = low
-turbinflow.lowZ.turb_scale_loc = 5.697 #scaled up from Wonsik's jet flame. Jet diam is 4.239 times bigger for iedo case
-turbinflow.lowZ.turb_scale_vel = 1.887 #
-turbinflow.lowZ.turb_center    = 0.0 0.0
+#turb_scale_loc is scaled up from Wonsik's jet flame. Jet diam is 4.239 times bigger for iedo case
+#1.344/4.239=0.317
+turbinflow.lowZ.turb_scale_loc = 0.317 
+#turb_scale_vel is scaled up from Wonsik's jet flame. Jet velocity is 3.33 times larger for iedo case
+#100/30.9*0.445365017 = 1.44
+turbinflow.lowZ.turb_scale_vel = 1.44 #
+turbinflow.lowZ.turb_center    = 0.0 1.e-3 #0.000175530981218185
 turbinflow.lowZ.turb_conv_vel  = 100.
 turbinflow.lowZ.turb_nplane    = 32
 
@@ -76,6 +79,14 @@ turbinflow.lowZ.turb_nplane    = 32
 #turbinflow.lowZ.turb_conv_vel  = 30.9 ##28.7
 #turbinflow.lowZ.turb_nplane    = 48
 
+turbinflow.lowY.turb_file      = Turb_test
+turbinflow.lowY.dir            = 1
+turbinflow.lowY.side           = low
+turbinflow.lowY.turb_scale_loc = 1.0
+turbinflow.lowY.turb_scale_vel = 1.0 
+turbinflow.lowY.turb_center    = 0.0125651 0.003190
+turbinflow.lowY.turb_conv_vel  = 5.
+turbinflow.lowY.turb_nplane    = 32
 #-------------------------PeleLM CONTROL----------------------------
 peleLM.v = 3
 peleLM.incompressible = 0
@@ -99,22 +110,23 @@ peleLM.closed_chamber = 0
 
 godunov.use_ppm = 0
 
-amr.stop_time = 1.5e-3
-# amr.stop_time = 0.75e-4
-# amr.max_step = 00
+amr.stop_time = 1.0e-3
+# amr.stop_time = 3.81944e-4
+# amr.max_step = 601
 amr.dt_shrink = 1.0
 amr.dt_change_max = 1.1
 amr.cfl = 0.5
 # amr.max_dt = 1.e-9
-# amr.fixed_dt = 1.e-8
-amr.init_dt = 1.e-10
+# amr.fixed_dt = 1.e-10
+# amr.init_dt = 1.e-10
 peleLM.deltaT_crashIfFailing = 0
 
 #-------------------------IO CONTROL----------------------------
 amr.checkpoint_files_output = 1
-# amr.restart             = chk06215
+amr.restart             = chk00100
+amr.initDataPlt         = ../channel_flow/plt48202
 amr.check_file          = chk          # root name of checkpoint file
-amr.check_int           = 150           # number of timesteps between checkpoints
+amr.check_int           = 100           # number of timesteps between checkpoints
 amr.plot_file           = plt          # root name of plot file
 # amr.plot_int            = 50          # number of timesteps between plot files
 amr.plot_per            = 2.e-5
@@ -132,7 +144,7 @@ amr.prodSide.value_greater = 1.0e-1
 amr.prodSide.field_name = Y(H2O)
 
 amr.vort.max_level = 5
-amr.vort.value_greater = 1.0e5
+amr.vort.value_greater = 2.0e5
 amr.vort.field_name = mag_vort
 
 amr.hrr.max_level = 5
@@ -156,13 +168,13 @@ peleLM.use_typ_vals_chem = 1          # Use species/temp typical values in CVODE
 peleLM.typical_values_reset_int = 10
 #ode.rtol = 1.0e-6                     # Relative tolerance of the chemical solve
 #ode.atol = 1.0e-5                     # Absolute tolerance factor applied on typical values
-# cvode.solve_type = GMRES     # CVODE Linear solve type (for Newton direction)
-cvode.solve_type = magma_direct        # CVODE Linear solve type (for Newton direction)
+cvode.solve_type = GMRES #sparse_direct     # CVODE Linear solve type (for Newton direction)
+# cvode.solve_type = dense_direct        # CVODE Linear solve type (for Newton direction)
 ode.clean_init_massfrac = 1
 # cvode.max_order  = 4                  # CVODE max BDF order.
 
 
-
+amrex.the_arena_is_managed = 1
 
 #amrex.fpe_trap_invalid = 1
 #amrex.fpe_trap_zero = 1
