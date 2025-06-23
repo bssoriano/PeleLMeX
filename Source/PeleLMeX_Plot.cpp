@@ -1019,6 +1019,22 @@ PeleLM::initLevelDataFromPlt(int a_lev, const std::string& a_dataPltFile)
   amrex::ParmParse pp("prob");
   amrex::Real T_mean = 298.;
   pp.query("T_mean", T_mean);
+
+  amrex::Real phi_main = 0.0;
+  pp.query("phi_chamber", phi_main);
+  
+  amrex::Real molefrac[NUM_SPECIES] = {0.0};
+  amrex::Real massfrac[NUM_SPECIES] = {0.0};
+  amrex::Real a = 0.5;
+  // molefrac[O2_ID] = 1.0 / ( 1.0 + phi_main / a + 0.79 / 0.21 );
+  // molefrac[H2_ID] = phi_main * molefrac[O2_ID] / a;
+  // molefrac[N2_ID] = 1.0 - molefrac[O2_ID] - molefrac[H2_ID];
+  molefrac[N2_ID] = 0.79;
+  molefrac[O2_ID] = 0.21;
+  
+  auto eos = pele::physics::PhysicsType::eos();
+  eos.X2Y(molefrac,massfrac);
+
 #ifdef AMREX_USE_OMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -1032,10 +1048,10 @@ PeleLM::initLevelDataFromPlt(int a_lev, const std::string& a_dataPltFile)
       bx,
       [=, eosparm = leosparm] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
         auto eos = pele::physics::PhysicsType::eos(eosparm);
-        Real massfrac[NUM_SPECIES] = {0.0};
+        // Real massfrac[NUM_SPECIES] = {0.0};
         Real sumYs = 0.0;
         for (int n = 0; n < NUM_SPECIES; n++) {
-          massfrac[n] = rhoY_arr(i, j, k, n);
+          // massfrac[n] = rhoY_arr(i, j, k, n);
 #ifdef N2_ID
           if (n != N2_ID) {
             sumYs += massfrac[n];
@@ -1043,11 +1059,9 @@ PeleLM::initLevelDataFromPlt(int a_lev, const std::string& a_dataPltFile)
 #endif
         }
 #ifdef N2_ID
-        massfrac[N2_ID] = 1.0 - sumYs;
+        // massfrac[N2_ID] = 1.0 - sumYs;
 #endif
-        
-        massfrac[N2_ID] = 0.767;
-        massfrac[O2_ID] = 0.233;
+
         temp_arr(i, j, k) = T_mean;
 
         // Get density
