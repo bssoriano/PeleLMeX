@@ -151,7 +151,7 @@ bcnormal(
       amrex::Real r = sqrt(pow((0.0-x[0]),2));
 #elif (AMREX_SPACEDIM == 3)
   if (idir == 0 and sgn == 1) {
-      amrex::Real r = sqrt(pow((prob_parm.jet_center[2]-x[2]),2)/pow(std::cos(prob_parm.jet_angle),2)+pow((prob_parm.jet_center[0]-x[1]),2));
+      amrex::Real r = sqrt(pow((prob_parm.jet_center[1]-x[1]),2)/pow(std::cos(prob_parm.jet_angle),2)+pow((prob_parm.jet_center[2]-x[2]),2));
 #endif
 
       amrex::Real N = 20.;
@@ -189,7 +189,7 @@ bcnormal(
       }
       else{
 	  for (int n = 0; n < NUM_SPECIES; n++) {
-            massfrac[n] = prob_parm.Y_chamber[n];
+            massfrac[n] = Y_air[n];
 	  }
       }
 
@@ -225,8 +225,8 @@ bcnormal(
 	  //}
 
           s_ext[VELX] = scaled_velx_fluct + std::cos(prob_parm.jet_angle)*vel_jet;
-          s_ext[VELY] = scaled_vely_fluct;
-          s_ext[VELZ] = scaled_velz_fluct + std::sin(prob_parm.jet_angle)*vel_jet;
+          s_ext[VELY] = scaled_velz_fluct + std::sin(prob_parm.jet_angle)*vel_jet;
+          s_ext[VELZ] = scaled_vely_fluct;
       }
       else{
           s_ext[VELX] = 0.0;
@@ -236,7 +236,7 @@ bcnormal(
 #endif
   }
   
-  else if (idir == 1 && sgn == 1) {
+  else if (idir == 2 && sgn == 1) {
     s_ext[TEMP] = prob_parm.T_mean;
       
     amrex::Real rho_cgs, P_cgs, RhoH_temp;
@@ -270,8 +270,8 @@ bcnormal(
     s_ext[TEMP] = prob_parm.Twall;
   }
 #elif (AMREX_SPACEDIM == 3)
-  // Set domain boundary Temp on the z-hi face when using NoSlipWallIsotherm
-  if (idir == 2 && sgn == -1) {
+  // Set domain boundary Temp on the y-hi face when using NoSlipWallIsotherm
+  if (idir == 1 && sgn == -1) {
     s_ext[TEMP] = prob_parm.Twall;
   }
   // Set domain boundary Temp on the x-hi face when using NoSlipWallIsotherm
@@ -362,72 +362,6 @@ zero_visc(
 }
 
 
-// struct EBhandle {
-//     AMREX_GPU_DEVICE
-//     AMREX_FORCE_INLINE
-//     void bctype_eb(const amrex::Real xEBface[AMREX_SPACEDIM],
-//                    int & EBflagType,
-//                    amrex::GeometryData const& /*geomdata*/,
-//                    ProbParm const& prob_parm) const
-//     {
-// 	//amrex::Real r = sqrt(pow((prob_parm.jet_center[0]-xEBface[0]),2)+pow((prob_parm.jet_center[1]-xEBface[1]),2)+pow((prob_parm.jet_center[2]-xEBface[2]),2));
-// 	amrex::Real r = sqrt(pow((prob_parm.jet_center[0]-xEBface[0]),2)+pow((prob_parm.jet_center[1]-xEBface[1]),2));
-//         if (r < prob_parm.jet_rad) {
-//             EBflagType = pelelmex::BCTypeEB::inflow;
-//         }
-//     }
-// 
-//     AMREX_GPU_DEVICE
-//     AMREX_FORCE_INLINE
-//     void bcnormal_eb(const amrex::Real xEBface[AMREX_SPACEDIM],
-//                      const amrex::Real EBfaceNormal[AMREX_SPACEDIM], // Outward normal
-//                      const amrex::Real s_in[NVAR],
-//                      amrex::Real s_ext[NVAR],
-//                      const amrex::Real time,
-//                      amrex::GeometryData const& /*geomdata*/,
-//                      ProbParm const& prob_parm) const
-//     {
-// 
-//         // Inflow
-// 	amrex::Real r = sqrt(pow((prob_parm.jet_center[0]-xEBface[0]),2)+pow((prob_parm.jet_center[1]-xEBface[1]),2));
-//         if (r < prob_parm.jet_rad) {
-//             amrex::Real N = 20.;
-//             amrex::Real radial_factor = 0.0;
-//             
-// 	    //streamwise velocity as a function of radial location
-//             radial_factor = (1-pow(r/prob_parm.jet_rad,N));
-//   
-//             amrex::Real vel_jet = prob_parm.V_jet*radial_factor;
-//       
-// 	    //temporal velocity function
-//             amrex::Real fu = 0.5*(tanh((time-prob_parm.t_si)/prob_parm.Ku)-tanh((time-prob_parm.t_ei)/prob_parm.Ku));
-//             vel_jet *= fu;
-// 
-//             auto eos = pele::physics::PhysicsType::eos();
-//             s_ext[VELX] = std::cos(prob_parm.jet_angle)*vel_jet;
-//             s_ext[VELY] = 0.0;
-//             s_ext[VELZ] = std::sin(prob_parm.jet_angle)*vel_jet;
-// 
-//             amrex::Real massfrac[NUM_SPECIES] = {0.0};
-//             massfrac[O2_ID] = 0.233;
-//             massfrac[N2_ID] = 1.0 - massfrac[O2_ID];
-// 
-//             amrex::Real P_cgs = prob_parm.P_mean * 10.0;
-// 
-//             s_ext[TEMP] = prob_parm.T_jet;
-//             amrex::Real rho_cgs, RhoH_temp;
-//             eos.PYT2R(P_cgs, massfrac, s_ext[TEMP], rho_cgs);
-//             s_ext[DENSITY] = rho_cgs * 1.0e3;
-// 
-//             eos.TY2H(s_ext[TEMP], massfrac, RhoH_temp);
-//             s_ext[RHOH] = RhoH_temp * 1.0e-4 * s_ext[DENSITY];
-// 
-//             for (int n = 0; n < NUM_SPECIES; n++) {
-//                 s_ext[FIRSTSPEC+n] = massfrac[n] * s_ext[DENSITY];
-//             }
-//         }
-//     }
-// };
 
 
 #endif

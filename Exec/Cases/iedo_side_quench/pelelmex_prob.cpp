@@ -98,37 +98,37 @@ PeleLM::readProbParm() // NOLINT(readability-make-member-function-const)
 
   prob_parm->jet_angle = Pi*jet_angle_deg/180; //conversion to radians
   prob_parm->jet_center[0] = 0.0;
-  prob_parm->jet_center[1] = 0.0;
-  amrex::Real z_over_D = 1.25; // jet is located in z at 1.25 jet diameters 
-  prob_parm->jet_center[2] = prob_parm->jet_rad*2.*z_over_D;
+  prob_parm->jet_center[2] = 0.0;
+  amrex::Real z_over_D = 1.25; // jet is located in y at 1.25 jet diameters 
+  prob_parm->jet_center[1] = prob_parm->jet_rad*2.*z_over_D;
 
   // ------ Initializing jet composition -------
-  PeleLM::prob_parm->Y_jet[AR_ID] = 0.0000e+00;
-  PeleLM::prob_parm->Y_jet[H_ID] = 3.7723e-04;
-  PeleLM::prob_parm->Y_jet[H2_ID] = 2.6774e-03;
-  PeleLM::prob_parm->Y_jet[H2O_ID] = 2.2048e-01;
-  PeleLM::prob_parm->Y_jet[H2O2_ID] = 5.8617e-07;
-  PeleLM::prob_parm->Y_jet[HE_ID] = -7.3720e-23;
-  PeleLM::prob_parm->Y_jet[HO2_ID] = 2.7369e-06;
-  PeleLM::prob_parm->Y_jet[N2_ID] = 7.4522e-01;
-  PeleLM::prob_parm->Y_jet[O_ID] = 2.0916e-03;
-  PeleLM::prob_parm->Y_jet[O2_ID] = 1.5928e-02;
-  PeleLM::prob_parm->Y_jet[OH_ID] = 1.3225e-02;
-  PeleLM::prob_parm->Y_jet[OHV_ID] = 1.0213e-10;
+//  PeleLM::prob_parm->Y_jet[AR_ID] = 0.0000e+00;
+//  PeleLM::prob_parm->Y_jet[H_ID] = 6.1752e-05;
+//  PeleLM::prob_parm->Y_jet[H2_ID] = 1.2031e-03;
+//  PeleLM::prob_parm->Y_jet[H2O_ID] = 2.3999e-01;
+//  PeleLM::prob_parm->Y_jet[H2O2_ID] = 1.4695e-06;
+//  PeleLM::prob_parm->Y_jet[HE_ID] = 1.0582e-21;
+//  PeleLM::prob_parm->Y_jet[HO2_ID] = 7.8011e-06;
+//  PeleLM::prob_parm->Y_jet[N2_ID] = 7.4521e-01;
+//  PeleLM::prob_parm->Y_jet[O_ID] = 3.6747e-04;
+//  PeleLM::prob_parm->Y_jet[O2_ID] = 6.6056e-03;
+//  PeleLM::prob_parm->Y_jet[OH_ID] = 6.5580e-03;
+//  PeleLM::prob_parm->Y_jet[OHV_ID] = 2.1619e-10;
 
-//  PeleLM::prob_parm->Y_jet[O2_ID] = 0.233;
-//  PeleLM::prob_parm->Y_jet[N2_ID] = 0.767;
+  PeleLM::prob_parm->Y_jet[O2_ID] = 0.233;
+  PeleLM::prob_parm->Y_jet[N2_ID] = 0.767;
 
   // ------ Initializing H2 premixed composition for the main chamber -------
   amrex::Real molefrac[NUM_SPECIES] = {0.0};
   amrex::Real massfrac[NUM_SPECIES] = {0.0};
-  amrex::Real a = 0.5;
-  molefrac[O2_ID] = 1.0 / ( 1.0 + phi_main / a + 0.79 / 0.21 );
-  molefrac[H2_ID] = phi_main * molefrac[O2_ID] / a;
-  molefrac[N2_ID] = 1.0 - molefrac[O2_ID] - molefrac[H2_ID];
+//  amrex::Real a = 0.5;
+//  molefrac[O2_ID] = 1.0 / ( 1.0 + phi_main / a + 0.79 / 0.21 );
+//  molefrac[H2_ID] = phi_main * molefrac[O2_ID] / a;
+//  molefrac[N2_ID] = 1.0 - molefrac[O2_ID] - molefrac[H2_ID];
   
-//  molefrac[N2_ID] = 0.79;
-//  molefrac[O2_ID] = 0.21;
+  molefrac[N2_ID] = 0.79;
+  molefrac[O2_ID] = 0.21;
 
   auto eos = pele::physics::PhysicsType::eos();
 
@@ -144,12 +144,12 @@ PeleLM::readProbParm() // NOLINT(readability-make-member-function-const)
      massfrac[n] = 0.0;
   }
 
-  molefrac[O2_ID] = 1.0 / ( 1.0 + phi_prechamber / a + 0.79 / 0.21 );
-  molefrac[H2_ID] = phi_prechamber * molefrac[O2_ID] / a;
-  molefrac[N2_ID] = 1.0 - molefrac[O2_ID] - molefrac[H2_ID];
+//  molefrac[O2_ID] = 1.0 / ( 1.0 + phi_prechamber / a + 0.79 / 0.21 );
+//  molefrac[H2_ID] = phi_prechamber * molefrac[O2_ID] / a;
+//  molefrac[N2_ID] = 1.0 - molefrac[O2_ID] - molefrac[H2_ID];
 
-//  molefrac[N2_ID] = 0.79;
-//  molefrac[O2_ID] = 0.21;
+  molefrac[N2_ID] = 0.79;
+  molefrac[O2_ID] = 0.21;
 
   eos.X2Y(molefrac,massfrac);
 
