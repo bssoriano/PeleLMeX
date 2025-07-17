@@ -867,10 +867,10 @@ PeleLM::initLevelDataFromPlt(int a_lev, const std::string& a_dataPltFile)
     Abort(" initializing data from a pltfile only available for low-Mach "
           "simulations");
   }
-  if (m_nAux > 0) {
-    Warning(" restarting from plotfile with auxiliaries not currently "
-            "implemented, and will not be captured");
-  }
+  // if (m_nAux > 0) {
+  //   Warning(" restarting from plotfile with auxiliaries not currently "
+  //           "implemented, and will not be captured");
+  // }
   amrex::Print() << " initData on level " << a_lev << " from pltfile "
                  << a_dataPltFile << "\n";
   if (pltfileSource == "LM") {
@@ -1046,11 +1046,29 @@ PeleLM::initLevelDataFromPlt(int a_lev, const std::string& a_dataPltFile)
   // Enforce rho and rhoH consistent with temperature and mixture
   // The above handles species mapping (to some extent), but nothing enforce
   // sum of Ys = 1 -> use N2 in the following if N2 is present
+  amrex::ParmParse pp("prob");
+  amrex::Real T_mean = 298.;
+  pp.query("T_mean", T_mean);
+
+  amrex::Real phi_main = 0.0;
+  pp.query("phi_chamber", phi_main);
+  
+  amrex::Real molefrac[NUM_SPECIES] = {0.0};
+  amrex::Real massfrac[NUM_SPECIES] = {0.0};
+  amrex::Real a = 0.5;
+  molefrac[O2_ID] = 1.0 / ( 1.0 + phi_main / a + 0.79 / 0.21 );
+  molefrac[H2_ID] = phi_main * molefrac[O2_ID] / a;
+  molefrac[N2_ID] = 1.0 - molefrac[O2_ID] - molefrac[H2_ID];
+  
+  auto eos = pele::physics::PhysicsType::eos();
+  eos.X2Y(molefrac,massfrac);
+
 #ifdef AMREX_USE_OMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
   for (MFIter mfi(ldata_p->state, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
     const Box& bx = mfi.tilebox();
+    auto const& aux_arr = ldata_p->auxiliaries.array(mfi);
     auto const& rho_arr = ldata_p->state.array(mfi, DENSITY);
     auto const& rhoY_arr = ldata_p->state.array(mfi, FIRSTSPEC);
     auto const& rhoH_arr = ldata_p->state.array(mfi, RHOH);
@@ -1059,19 +1077,22 @@ PeleLM::initLevelDataFromPlt(int a_lev, const std::string& a_dataPltFile)
       bx,
       [=, eosparm = leosparm] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
         auto eos = pele::physics::PhysicsType::eos(eosparm);
-        Real massfrac[NUM_SPECIES] = {0.0};
-        Real sumYs = 0.0;
-        for (int n = 0; n < NUM_SPECIES; n++) {
-          massfrac[n] = rhoY_arr(i, j, k, n);
-#ifdef N2_ID
-          if (n != N2_ID) {
-            sumYs += massfrac[n];
-          }
-#endif
-        }
-#ifdef N2_ID
-        massfrac[N2_ID] = 1.0 - sumYs;
-#endif
+        // Real massfrac[NUM_SPECIES] = {0.0};
+        // Real sumYs = 0.0;
+        // for (int n = 0; n < NUM_SPECIES; n++) {
+          //massfrac[n] = rhoY_arr(i, j, k, n);
+// #ifdef N2_ID
+//           if (n != N2_ID) {
+//             sumYs += massfrac[n];
+//           }
+// #endif
+//         }
+// #ifdef N2_ID
+        //massfrac[N2_ID] = 1.0 - sumYs;
+// #endif
+
+        aux_arr(i, j, k, 0) = 0.0;
+        temp_arr(i, j, k) = T_mean;
 
         // Get density
         Real P_cgs = lprobparm->P_mean * 10.0;
