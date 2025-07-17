@@ -86,7 +86,9 @@ PeleLM::WritePlotFile()
   //----------------------------------------------------------------
   // Average down the state
   averageDownState(AmrNewTime);
-
+  if (m_nAux > 0) {
+    averageDownAux(AmrNewTime);
+  }
   // Get consistent reaction data across level
   if ((m_do_react != 0) && (m_skipInstantRR == 0) && (m_plot_react != 0)) {
     averageDownReaction();
@@ -115,6 +117,8 @@ PeleLM::WritePlotFile()
       ncomp += 1;
     }
   }
+
+  ncomp += m_nAux;
 
   // Reactions
   if ((m_do_react != 0) && (m_skipInstantRR == 0) && (m_plot_react != 0)) {
@@ -223,6 +227,10 @@ PeleLM::WritePlotFile()
     AMREX_D_TERM(plt_VarsName.push_back("gradpx");
                  , plt_VarsName.push_back("gradpy");
                  , plt_VarsName.push_back("gradpz"));
+  }
+
+  for (int n = 0; n < m_nAux; n++) {
+    plt_VarsName.push_back(m_aux_names[n]);
   }
 
   if ((m_do_react != 0) && (m_skipInstantRR == 0) && (m_plot_react != 0)) {
@@ -352,6 +360,12 @@ PeleLM::WritePlotFile()
       MultiFab::Copy(
         mf_plt[lev], m_leveldata_new[lev]->gp, 0, cnt, AMREX_SPACEDIM, 0);
       cnt += AMREX_SPACEDIM;
+    }
+
+    if (m_nAux > 0) {
+      MultiFab::Copy(
+        mf_plt[lev], m_leveldata_new[lev]->auxiliaries, 0, cnt, m_nAux, 0);
+      cnt += m_nAux;
     }
 
     if ((m_do_react != 0) && (m_skipInstantRR == 0) && (m_plot_react != 0)) {
@@ -598,6 +612,13 @@ PeleLM::WriteCheckPointFile()
       m_leveldata_new[lev]->press,
       amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "p"));
 
+    if (m_nAux > 0) {
+      VisMF::Write(
+        m_leveldata_new[lev]->auxiliaries,
+        amrex::MultiFabFileFullPrefix(
+          lev, checkpointname, level_prefix, "aux"));
+    }
+
     if (m_incompressible == 0) {
       if (m_has_divu != 0) {
         VisMF::Write(
@@ -786,6 +807,12 @@ PeleLM::ReadCheckPointFile()
     VisMF::Read(
       m_leveldata_new[lev]->press,
       amrex::MultiFabFileFullPrefix(lev, m_restart_chkfile, level_prefix, "p"));
+    if (m_nAux > 0) {
+      VisMF::Read(
+        m_leveldata_new[lev]->auxiliaries,
+        amrex::MultiFabFileFullPrefix(
+          lev, m_restart_chkfile, level_prefix, "aux"));
+    }
 
     if (m_incompressible == 0) {
       if (m_has_divu != 0) {
@@ -840,7 +867,10 @@ PeleLM::initLevelDataFromPlt(int a_lev, const std::string& a_dataPltFile)
     Abort(" initializing data from a pltfile only available for low-Mach "
           "simulations");
   }
-
+  if (m_nAux > 0) {
+    Warning(" restarting from plotfile with auxiliaries not currently "
+            "implemented, and will not be captured");
+  }
   amrex::Print() << " initData on level " << a_lev << " from pltfile "
                  << a_dataPltFile << "\n";
   if (pltfileSource == "LM") {
@@ -1016,25 +1046,6 @@ PeleLM::initLevelDataFromPlt(int a_lev, const std::string& a_dataPltFile)
   // Enforce rho and rhoH consistent with temperature and mixture
   // The above handles species mapping (to some extent), but nothing enforce
   // sum of Ys = 1 -> use N2 in the following if N2 is present
-  amrex::ParmParse pp("prob");
-  amrex::Real T_mean = 298.;
-  pp.query("T_mean", T_mean);
-
-  amrex::Real phi_main = 0.0;
-  pp.query("phi_chamber", phi_main);
-  
-  amrex::Real molefrac[NUM_SPECIES] = {0.0};
-  amrex::Real massfrac[NUM_SPECIES] = {0.0};
-  amrex::Real a = 0.5;
-  // molefrac[O2_ID] = 1.0 / ( 1.0 + phi_main / a + 0.79 / 0.21 );
-  // molefrac[H2_ID] = phi_main * molefrac[O2_ID] / a;
-  // molefrac[N2_ID] = 1.0 - molefrac[O2_ID] - molefrac[H2_ID];
-  molefrac[N2_ID] = 0.79;
-  molefrac[O2_ID] = 0.21;
-  
-  auto eos = pele::physics::PhysicsType::eos();
-  eos.X2Y(molefrac,massfrac);
-
 #ifdef AMREX_USE_OMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -1048,10 +1059,10 @@ PeleLM::initLevelDataFromPlt(int a_lev, const std::string& a_dataPltFile)
       bx,
       [=, eosparm = leosparm] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
         auto eos = pele::physics::PhysicsType::eos(eosparm);
-        // Real massfrac[NUM_SPECIES] = {0.0};
+        Real massfrac[NUM_SPECIES] = {0.0};
         Real sumYs = 0.0;
         for (int n = 0; n < NUM_SPECIES; n++) {
-          // massfrac[n] = rhoY_arr(i, j, k, n);
+          massfrac[n] = rhoY_arr(i, j, k, n);
 #ifdef N2_ID
           if (n != N2_ID) {
             sumYs += massfrac[n];
@@ -1059,10 +1070,8 @@ PeleLM::initLevelDataFromPlt(int a_lev, const std::string& a_dataPltFile)
 #endif
         }
 #ifdef N2_ID
-        // massfrac[N2_ID] = 1.0 - sumYs;
+        massfrac[N2_ID] = 1.0 - sumYs;
 #endif
-
-        temp_arr(i, j, k) = T_mean;
 
         // Get density
         Real P_cgs = lprobparm->P_mean * 10.0;
