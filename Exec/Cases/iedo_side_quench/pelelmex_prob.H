@@ -189,7 +189,7 @@ bcnormal(
       }
       else{
 	  for (int n = 0; n < NUM_SPECIES; n++) {
-            massfrac[n] = Y_air[n];
+            massfrac[n] = prob_parm.Y_chamber[n];
 	  }
       }
 
@@ -241,7 +241,10 @@ bcnormal(
       
     amrex::Real rho_cgs, P_cgs, RhoH_temp;
     P_cgs = prob_parm.P_mean * 10.0;
-
+  
+    for (int n = 0; n < NUM_SPECIES; n++) {
+      massfrac[n] = prob_parm.Y_chamber[n];
+    }
 
     eos.PYT2R(P_cgs, Y_air, s_ext[TEMP], rho_cgs);
     s_ext[DENSITY] = rho_cgs * 1.0e3;
@@ -251,7 +254,7 @@ bcnormal(
         RhoH_temp * 1.0e-4 * s_ext[DENSITY]; // CGS -> MKS conversion
 
     for (int n = 0; n < NUM_SPECIES; n++) {
-        s_ext[FIRSTSPEC + n] = Y_air[n] * s_ext[DENSITY];
+        s_ext[FIRSTSPEC + n] = massfrac[n] * s_ext[DENSITY];
     }
     
 //    amrex::Real scaled_velx_fluct = s_ext[VELX];
@@ -318,7 +321,7 @@ bcnormal_aux(
       amrex::Real r = sqrt(pow((0.0-x[0]),2));
 #elif (AMREX_SPACEDIM == 3)
   if (idir == 0 and sgn == 1) {
-      amrex::Real r = sqrt(pow((prob_parm.jet_center[2]-x[2]),2)/pow(std::cos(prob_parm.jet_angle),2)+pow((prob_parm.jet_center[0]-x[1]),2));
+      amrex::Real r = sqrt(pow((prob_parm.jet_center[1]-x[1]),2)/pow(std::cos(prob_parm.jet_angle),2)+pow((prob_parm.jet_center[2]-x[2]),2));
 #endif
 
       amrex::Real N = 20.;
