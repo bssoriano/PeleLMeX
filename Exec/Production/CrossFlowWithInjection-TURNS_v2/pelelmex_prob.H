@@ -90,9 +90,9 @@ pelelmex_initdata(
         // Standard flame
         //amrex::Print() << "Standard flame initialization (1)\n";
         
-        double y_sf = 0.4;
+        double y_sf = 0.8;
         double V_asymp = 10.0;
-        double Pe_asymp = 55.0;
+        double Pe_asymp = 25.0;
   
         double y_or = 0.272;
         double x_or = 0.136;
@@ -104,7 +104,7 @@ pelelmex_initdata(
           //nu = 3.99d0,    !for Methane , 3.51d0 for n-Heptane
         //YF_b = 1.0,
         //YO_oo = 0.21d0,
-        double YF_b = 0.1;
+        double YF_b = 1.0;
         double S_IC = 3.99 * YF_b / 0.21;
 
         //Q = (q_dim * YF_b) / (cp_tot * Too) !Heat of combustion
@@ -119,20 +119,22 @@ pelelmex_initdata(
 
         // Calculate the unnormalized value
         double Z_unnormalized = (sqrt(y_sf/(y-y_or)) * exp(-(V_asymp*Pe_asymp/4.0) *((x-x_or)*(x-x_or))/(y-y_or)));
-          
-        // Find the maximum possible value (occurs at x=0.2)
-        double Z_max_value = sqrt(y_sf/(y-y_or)); // When x=0.2, the exponential term becomes 1
-          
-        // Normalize between 0 and 1
-        massfrac[CH4_ID] = YF_b * Z_unnormalized / Z_max_value;
 
         if (Z_unnormalized > 1) {
         state(i, j, k, TEMP) = prob_parm.T_mean * (Q_IC/(S_IC+1.0))*(H_IC - ( Z_unnormalized - 1.0)/S_IC);
+        massfrac[CH4_ID] = (Z_unnormalized-1.0) / S_IC;
         } else {
         state(i, j, k, TEMP) = prob_parm.T_mean * (Q_IC/(S_IC+1.0))*(H_IC - (-Z_unnormalized + 1.0));
+        massfrac[CH4_ID] = 0.0;
         }
 
+
         }
+
+        if (massfrac[CH4_ID] > 1) {
+        massfrac[CH4_ID] = 1.0;        
+        }
+
         massfrac[O2_ID] = (1.0 - massfrac[CH4_ID]) * 0.233;
         massfrac[N2_ID] =  1.0 - massfrac[CH4_ID] - massfrac[O2_ID];
 
