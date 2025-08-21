@@ -6,7 +6,6 @@
 #include <AMReX_ParmParse.H>
 #include <PeleLMeX_BCfill.H>
 #include <AMReX_FillPatchUtil.H>
-#include <PeleLMeX_PatchFlowVariables.H>
 #include <memory>
 #ifdef AMREX_USE_EB
 #include <AMReX_EBInterpolater.H>
@@ -86,7 +85,9 @@ PeleLM::WritePlotFile()
   //----------------------------------------------------------------
   // Average down the state
   averageDownState(AmrNewTime);
-
+  if (m_nAux > 0) {
+    averageDownAux(AmrNewTime);
+  }
   // Get consistent reaction data across level
   if ((m_do_react != 0) && (m_skipInstantRR == 0) && (m_plot_react != 0)) {
     averageDownReaction();
@@ -115,6 +116,8 @@ PeleLM::WritePlotFile()
       ncomp += 1;
     }
   }
+
+  ncomp += m_nAux;
 
   // Reactions
   if ((m_do_react != 0) && (m_skipInstantRR == 0) && (m_plot_react != 0)) {
@@ -166,7 +169,6 @@ PeleLM::WritePlotFile()
   }
 
   if (m_plot_extSource) {
-    // Plot state
     ncomp += NVAR;
   }
 
@@ -223,6 +225,10 @@ PeleLM::WritePlotFile()
     AMREX_D_TERM(plt_VarsName.push_back("gradpx");
                  , plt_VarsName.push_back("gradpy");
                  , plt_VarsName.push_back("gradpz"));
+  }
+
+  for (int n = 0; n < m_nAux; n++) {
+    plt_VarsName.push_back(m_aux_names[n]);
   }
 
   if ((m_do_react != 0) && (m_skipInstantRR == 0) && (m_plot_react != 0)) {
@@ -354,6 +360,12 @@ PeleLM::WritePlotFile()
       cnt += AMREX_SPACEDIM;
     }
 
+    if (m_nAux > 0) {
+      MultiFab::Copy(
+        mf_plt[lev], m_leveldata_new[lev]->auxiliaries, 0, cnt, m_nAux, 0);
+      cnt += m_nAux;
+    }
+
     if ((m_do_react != 0) && (m_skipInstantRR == 0) && (m_plot_react != 0)) {
       MultiFab::Copy(
         mf_plt[lev], m_leveldatareact[lev]->I_R, 0, cnt, nCompIR(), 0);
@@ -424,12 +436,13 @@ PeleLM::WritePlotFile()
     if (m_do_les && m_plot_les) {
       constexpr amrex::Real fact = 0.5 / AMREX_SPACEDIM;
       auto const& plot_arr = mf_plt[lev].arrays();
-      AMREX_D_TERM(auto const& mut_arr_x =
-                     m_leveldata_old[lev]->visc_turb_fc[0].const_arrays();
-                   , auto const& mut_arr_y =
-                       m_leveldata_old[lev]->visc_turb_fc[1].const_arrays();
-                   , auto const& mut_arr_z =
-                       m_leveldata_old[lev]->visc_turb_fc[2].const_arrays();)
+      AMREX_D_TERM(
+        auto const& mut_arr_x =
+          m_leveldata_old[lev]->visc_turb_fc[0].const_arrays();
+        , auto const& mut_arr_y =
+            m_leveldata_old[lev]->visc_turb_fc[1].const_arrays();
+        , auto const& mut_arr_z =
+            m_leveldata_old[lev]->visc_turb_fc[2].const_arrays();)
       // interpolate turbulent viscosity from faces to centers
       amrex::ParallelFor(
         mf_plt[lev],
@@ -597,6 +610,13 @@ PeleLM::WriteCheckPointFile()
     VisMF::Write(
       m_leveldata_new[lev]->press,
       amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "p"));
+
+    if (m_nAux > 0) {
+      VisMF::Write(
+        m_leveldata_new[lev]->auxiliaries,
+        amrex::MultiFabFileFullPrefix(
+          lev, checkpointname, level_prefix, "aux"));
+    }
 
     if (m_incompressible == 0) {
       if (m_has_divu != 0) {
@@ -786,6 +806,12 @@ PeleLM::ReadCheckPointFile()
     VisMF::Read(
       m_leveldata_new[lev]->press,
       amrex::MultiFabFileFullPrefix(lev, m_restart_chkfile, level_prefix, "p"));
+    if (m_nAux > 0) {
+      VisMF::Read(
+        m_leveldata_new[lev]->auxiliaries,
+        amrex::MultiFabFileFullPrefix(
+          lev, m_restart_chkfile, level_prefix, "aux"));
+    }
 
     if (m_incompressible == 0) {
       if (m_has_divu != 0) {
@@ -837,10 +863,15 @@ void
 PeleLM::initLevelDataFromPlt(int a_lev, const std::string& a_dataPltFile)
 {
   if (m_incompressible != 0) {
-    Abort(" initializing data from a pltfile only available for low-Mach "
-          "simulations");
+    Abort(
+      " initializing data from a pltfile only available for low-Mach "
+      "simulations");
   }
-
+  if (m_nAux > 0) {
+    Warning(
+      " restarting from plotfile with auxiliaries not currently "
+      "implemented, and will not be captured");
+  }
   amrex::Print() << " initData on level " << a_lev << " from pltfile "
                  << a_dataPltFile << "\n";
   if (pltfileSource == "LM") {
@@ -1010,7 +1041,8 @@ PeleLM::initLevelDataFromPlt(int a_lev, const std::string& a_dataPltFile)
   // If m_do_patch_flow_variables is set as true, call user-defined function to
   // patch flow variables
   if (m_do_patch_flow_variables) {
-    patchFlowVariables(geom[a_lev], *lprobparm, ldata_p->state);
+    ProblemSpecificFunctions::patchFlowVariables(
+      geom[a_lev], *lprobparm, ldata_p->state);
   }
 
   // Enforce rho and rhoH consistent with temperature and mixture
@@ -1065,6 +1097,64 @@ PeleLM::initLevelDataFromPlt(int a_lev, const std::string& a_dataPltFile)
   setThermoPress(a_lev, AmrNewTime);
   if (m_has_divu != 0) {
     ldata_p->divu.setVal(0.0);
+  }
+}
+
+void
+PeleLM::addLevelVelocityDataFromPlt(int a_lev, const std::string& a_velPltFile)
+{
+  amrex::Print() << " init velocity data on level " << a_lev << " from pltfile "
+                 << a_velPltFile << "\n";
+
+  // Use PelePhysics PltFileManager
+  pele::physics::pltfilemanager::PltFileManager pltData(a_velPltFile);
+  Vector<std::string> plt_vars = pltData.getVariableList();
+
+  // do some compatibility checks
+  if (pltData.getNlev() < a_lev) {
+    Abort("USE_VELOCITY: not enough levels in plotfile");
+  }
+  if (pltData.getGeom(a_lev).Domain() != geom[a_lev].Domain()) {
+    Abort("USE_VELOCITY: problem domains do not match");
+  }
+
+  // find velocity in the plotfile
+  int idXvel = -1;
+  for (int i = 0; i < plt_vars.size(); ++i) {
+    if (plt_vars[i] == "x_velocity") {
+      idXvel = i;
+    }
+  }
+  if (idXvel == -1) {
+    Abort("Could not find velocity fields in supplied velocity_plotfile");
+  }
+
+  // Get level data
+  auto* ldata_p = getLevelDataPtr(a_lev, AmrNewTime);
+
+  // load data from plot file
+  BoxArray tmpVelBA(ldata_p->state.boxArray());
+  DistributionMapping tmpVelDM(tmpVelBA);
+  int nGrow0(0), sComp0(0);
+  MultiFab tmpVel(tmpVelBA, tmpVelDM, AMREX_SPACEDIM, nGrow0);
+  pltData.fillPatchFromPlt(
+    a_lev, geom[a_lev], idXvel, sComp0, AMREX_SPACEDIM, tmpVel);
+  // scale the velocity
+  tmpVel.mult(m_velocity_plotfile_scale);
+
+#ifdef AMREX_USE_OMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+  for (MFIter mfi(ldata_p->state, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+    const Box& bx = mfi.tilebox();
+    FArrayBox DummyFab(bx, 1);
+    auto const& state_arr = ldata_p->state.array(mfi);
+    auto const& tmpVel_arr = tmpVel.array(mfi);
+    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+      for (int n = 0; n < AMREX_SPACEDIM; n++) {
+        state_arr(i, j, k, XVEL + n) += tmpVel_arr(i, j, k, n);
+      }
+    });
   }
 }
 

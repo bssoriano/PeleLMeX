@@ -4,7 +4,6 @@
 #include <PeleLMeX_BPatch.H>
 #include "PelePhysics.H"
 #include <AMReX_buildInfo.H>
-#include <PeleLMeX_ProblemSpecificFunctions.H>
 
 #ifdef PELE_USE_PLASMA
 #include "PeleLMeX_EOS_Extension.H"
@@ -100,9 +99,15 @@ PeleLM::Setup()
     trans_parms.initialize();
     if ((m_les_verbose != 0) and m_do_les) { // Say what transport model we're
                                              // going to use
+
       amrex::Print() << "    Using LES in transport with Sc = "
-                     << 1.0 / m_Schmidt_inv
-                     << " and Pr = " << 1.0 / m_Prandtl_inv << std::endl;
+                     << 1.0 / m_Schmidt_inv;
+      if (pele::physics::PhysicsType::eos_type::identifier() == "Manifold") {
+        amrex::Print() << ", enthalpy not diffused for Manifold EOS "
+                       << std::endl;
+      } else {
+        amrex::Print() << " and Pr = " << 1.0 / m_Prandtl_inv << std::endl;
+      }
     } else if (m_verbose != 0) {
       if (m_fixed_Le == 0 && m_fixed_Pr == 0) {
         if (m_use_soret == 0) {
@@ -194,6 +199,9 @@ PeleLM::Setup()
 
   // Initialize turbulence injection
   turb_inflow.init(Geom(0));
+  if (m_do_turbulent_forcing) {
+    turb_forcing.init(Geom(0).data());
+  }
 
   // Initialize BCs
   setBoundaryConditions();
@@ -396,6 +404,33 @@ PeleLM::readParameters()
     }
   }
 
+  m_nAux = pp.countval("aux_vars");
+  if (m_nAux > 0) {
+    m_aux_names.resize(m_nAux);
+    m_AdvTypeAux.resize(m_nAux);
+    m_aux_advect.resize(m_nAux);
+    m_DiffTypeAux.resize(m_nAux);
+    m_aux_Schmidt.resize(m_nAux);
+    for (int n = 0; n < m_nAux; n++) {
+      pp.get("aux_vars", m_aux_names[n], n);
+      std::string aux_prefix = "peleLM." + m_aux_names[n];
+      ParmParse ppa(aux_prefix);
+      m_aux_advect[n] = 1;
+      ppa.query("advect", m_aux_advect[n]);
+      m_AdvTypeAux[n] = 1;
+      ppa.query("conservative", m_AdvTypeAux[n]);
+      m_aux_Schmidt[n] = -1.0;
+      ppa.query("Schmidt", m_aux_Schmidt[n]);
+      int diffuse = 1;
+      ppa.query("diffuse", diffuse);
+      if (diffuse == 0) {
+        m_DiffTypeAux[n] = 0;
+      } else {
+        m_DiffTypeAux[n] = 1;
+      }
+    }
+  }
+
   // -----------------------------------------
   // LES
   // -----------------------------------------
@@ -419,9 +454,7 @@ PeleLM::readParameters()
     m_les_verbose = m_verbose;
     pp.query("plot_les", m_plot_les);
     pp.query("les_v", m_les_verbose);
-    for (int lev = 0; lev <= max_level; ++lev) {
-      m_turb_visc_time.push_back(-1.0E200);
-    }
+    pp.query("les_c_chi", m_les_c_chi);
 #ifdef PELE_USE_PLASMA
     amrex::Abort("LES implementation is not yet compatible with plasma/ions");
 #endif
@@ -496,6 +529,11 @@ PeleLM::readParameters()
                    << std::endl;
   }
 
+  // Manifold EOS: invPrandtl needs to be 0 because H not used
+  if (pele::physics::PhysicsType::eos_type::identifier() == "Manifold") {
+    m_Prandtl_inv = 0.0;
+  }
+
   pp.query("deltaT_verbose", m_deltaT_verbose);
   pp.query("deltaT_iterMax", m_deltaTIterMax);
   pp.query("deltaT_tol", m_deltaT_norm_max);
@@ -542,19 +580,27 @@ PeleLM::readParameters()
     if (mgsc_size == 1) {
       int mgsc;
       pp.query("max_grid_size_chem", mgsc);
-      AMREX_D_TERM(m_max_grid_size_chem[0] = mgsc;
-                   , m_max_grid_size_chem[1] = mgsc;
-                   , m_max_grid_size_chem[2] = mgsc);
+      AMREX_D_TERM(
+        m_max_grid_size_chem[0] = mgsc;, m_max_grid_size_chem[1] = mgsc;
+        , m_max_grid_size_chem[2] = mgsc);
     } else if (mgsc_size == AMREX_SPACEDIM) {
       Vector<int> mgsc;
       pp.getarr("max_grid_size_chem", mgsc, 0, AMREX_SPACEDIM);
-      AMREX_D_TERM(m_max_grid_size_chem[0] = mgsc[0];
-                   , m_max_grid_size_chem[1] = mgsc[1];
-                   , m_max_grid_size_chem[2] = mgsc[2]);
+      AMREX_D_TERM(
+        m_max_grid_size_chem[0] = mgsc[0];, m_max_grid_size_chem[1] = mgsc[1];
+        , m_max_grid_size_chem[2] = mgsc[2]);
     } else {
       Abort("peleLM.max_grid_size_chem should have 1 or AMREX_SPACEDIM values");
     }
   }
+
+  // -----------------------------------------
+  // Turbulent Forcing
+  // -----------------------------------------
+  pp.query("do_turbulent_forcing", m_do_turbulent_forcing);
+  // Add turbulent velocity from an existing plotfile
+  pp.query("velocity_plotfile", m_velocity_plotfile);
+  pp.query("velocity_plotfile_scale", m_velocity_plotfile_scale);
 
   // -----------------------------------------
   // Load Balancing
@@ -609,8 +655,9 @@ PeleLM::readParameters()
     m_advection_type = "BDS";
     m_Godunov_ppm = 0;
   } else {
-    Abort("Unknown 'advection_scheme'. Recognized options are: Godunov_PLM, "
-          "Godunov_PPM or Godunov_BDS");
+    Abort(
+      "Unknown 'advection_scheme'. Recognized options are: Godunov_PLM, "
+      "Godunov_PPM or Godunov_BDS");
   }
   m_predict_advection_type =
     "Godunov"; // Only option at this point. This will disappear when
@@ -689,8 +736,8 @@ PeleLM::readParameters()
   pp.query("isothermal_EB", m_isothermalEB);
   pp.query("adv_redist_type", m_adv_redist_type);
   pp.query("diff_redist_type", m_diff_redist_type);
-  pp.query("EBinflow",m_useEBinflow);
-  if (m_isothermalEB == 1 || m_useEBinflow == 1) {
+  pp.query("EBinflow", m_useEBinflow);
+  if (m_isothermalEB != 0 || m_useEBinflow != 0) {
     checkEBInflowFunctions();
   }
 #endif
@@ -767,8 +814,10 @@ PeleLM::readParameters()
   m_user_defined_ext_sources = false;
   m_ext_sources_SDC = false; // TODO: add capability to update ext_srcs in SDC
   m_plot_extSource = false;
+  m_add_variance_sources = true;
   pp.query("user_defined_ext_sources", m_user_defined_ext_sources);
   pp.query("plot_extSource", m_plot_extSource);
+  pp.query("add_variance_sources", m_add_variance_sources);
 }
 
 void
@@ -805,9 +854,10 @@ PeleLM::checkSetupParams()
       std::abs(
         (0.1 * eos_parms.host_parm().Pnom_cgs - prob_parm->P_mean) /
         prob_parm->P_mean) > 1e-6) {
-      amrex::Abort("For Manifold EOS, pressure in manifold model "
-                   "(manifold.nominal_pressure_cgs) and pressure in PeleLMeX "
-                   "(prob.Pmean) must match");
+      amrex::Abort(
+        "For Manifold EOS, pressure in manifold model "
+        "(manifold.nominal_pressure_cgs) and pressure in PeleLMeX "
+        "(prob.Pmean) must match");
     }
 #endif
   }
@@ -919,26 +969,21 @@ PeleLM::variablesSetup()
 #endif
 #if NUM_ODE > 0
     Print() << " First ODE: " << FIRSTODE << "\n";
-    set_ode_names(m_ode_names);
+    ProblemSpecificFunctions::set_ode_names(m_ode_names);
     if (m_ode_names.size() != NUM_ODE) {
-      Abort("ODEQty names improperly set. Adjust set_ode_names in "
-            "ProblemSpecificFunctions or NUM_ODE in GNUMakefile");
+      Abort(
+        "ODEQty names improperly set. Adjust set_ode_names in "
+        "ProblemSpecificFunctions or NUM_ODE in GNUMakefile");
     }
     for (int n = 0; n < NUM_ODE; ++n) {
       if (m_ode_names[n].empty()) {
-        Abort("ODEQty names improperly set. Adjust set_ode_names in "
-              "ProblemSpecificFunctions or NUM_ODE in GNUMakefile");
+        Abort(
+          "ODEQty names improperly set. Adjust set_ode_names in "
+          "ProblemSpecificFunctions or NUM_ODE in GNUMakefile");
       }
       stateComponents.emplace_back(FIRSTODE + n, m_ode_names[n]);
     }
 #endif
-  }
-
-  if (m_nAux > 0) {
-    Print() << " First passive scalar: " << FIRSTAUX << "\n";
-    for (int n = 0; n < m_nAux; n++) {
-      stateComponents.emplace_back(FIRSTAUX + n, "Aux_" + std::to_string(n));
-    }
   }
 
   if (m_incompressible != 0) {
@@ -946,6 +991,20 @@ PeleLM::variablesSetup()
             << "\n";
   } else {
     Print() << " => Total number of state variables: " << NVAR << "\n";
+  }
+  if (m_nAux > 0) {
+    for (int n = 0; n < m_nAux; n++) {
+      Print() << " Auxiliary " + std::to_string(n + 1) + ": " << m_aux_names[n]
+              << "\n";
+      Print() << "   Advective: " << m_aux_advect[n] << "\n";
+      Print() << "   Conservative: " << m_AdvTypeAux[n] << "\n";
+      Print() << "   Diffusive: " << m_DiffTypeAux[n];
+      if (m_aux_Schmidt[n] > 0) {
+        Print() << " - Schmidt number: " << m_aux_Schmidt[n];
+      }
+      Print() << "\n";
+    }
+    Print() << " => Total number of auxiliary variables: " << m_nAux << "\n";
   }
   Print() << PrettyLine;
   Print() << "\n";
@@ -1147,6 +1206,13 @@ PeleLM::derivedSetup()
     "DistributionMap", IndexType::TheCellType(), 1, pelelmex_derdmap,
     the_same_box);
 
+  // Turbulent Forcing Terms
+  Vector<std::string> var_names_turbforcing = {
+    AMREX_D_DECL("forcex", "forcey", "forcez")};
+  derive_lst.add(
+    "turbforces", IndexType::TheCellType(), AMREX_SPACEDIM,
+    var_names_turbforcing, pelelmex_derturbforcing, the_same_box);
+
   // Cell average pressure
   derive_lst.add(
     "avg_pressure", IndexType::TheCellType(), 1, pelelmex_deravgpress,
@@ -1325,8 +1391,9 @@ PeleLM::evaluateSetup()
   {
     Vector<std::string> var_names(
       NVAR - 2); // Skip temperature and RhoRT, unused
-    AMREX_D_TERM(var_names[VELX] = "A(VELX)";, var_names[VELY] = "A(VELY)";
-                 , var_names[VELZ] = "A(VELZ)");
+    AMREX_D_TERM(
+      var_names[VELX] = "A(VELX)";, var_names[VELY] = "A(VELY)";
+      , var_names[VELZ] = "A(VELZ)");
     var_names[DENSITY] = "A(Rho)";
     for (int n = 0; n < NUM_SPECIES; n++) {
       var_names[FIRSTSPEC + n] = "A(" + spec_names[n] + ")";
@@ -1463,9 +1530,10 @@ PeleLM::taggingSetup()
       errTags.push_back(AMRErrorTag(info));
       itexists = true;
     } else {
-      Abort(std::string(
-              "Unrecognized refinement indicator for " + refinement_indicator)
-              .c_str());
+      Abort(
+        std::string(
+          "Unrecognized refinement indicator for " + refinement_indicator)
+          .c_str());
     }
 
     if (!itexists) {

@@ -100,6 +100,10 @@ PeleLM::MakeNewLevelFromScratch(
     } else {
       initLevelDataFromPlt(lev, m_restart_pltfile);
     }
+    if (!m_velocity_plotfile.empty()) {
+      // Add turbulent velocity from an existing plotfile
+      addLevelVelocityDataFromPlt(lev, m_velocity_plotfile);
+    }
   }
 
   // Times
@@ -217,6 +221,11 @@ PeleLM::initData()
     averageDownState(AmrNewTime);
     fillPatchState(AmrNewTime);
 
+    if (m_nAux > 0) {
+      averageDownAux(AmrNewTime);
+      fillPatchAux(AmrNewTime);
+    }
+
     if (m_plot_init_state) {
       WritePlotFile();
     }
@@ -254,6 +263,9 @@ PeleLM::initData()
     }
 
     Print() << PrettyLine;
+
+    // Diagnostics
+    doDiagnostics();
 
   } else {
     //----------------------------------------------------------------
@@ -345,6 +357,7 @@ PeleLM::initLevelData(int lev)
   // Prob/PMF data
   ProbParm const* lprobparm = prob_parm_d;
   auto const* lpmfdata = pmf_data.device_parm();
+  auto const local_m_incompressible = m_incompressible;
 
 #ifdef AMREX_USE_OMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -355,16 +368,14 @@ PeleLM::initLevelData(int lev)
     auto const& state_arr = ldata_p->state.array(mfi);
     auto const& aux_arr =
       (m_nAux > 0) ? ldata_p->auxiliaries.array(mfi) : DummyFab.array();
-    amrex::ParallelFor(
-      bx, [=, m_incompressible = m_incompressible] AMREX_GPU_DEVICE(
-            int i, int j, int k) noexcept {
-        pelelmex_initdata(
-          i, j, k, m_incompressible, state_arr, aux_arr, geomdata, *lprobparm,
-          lpmfdata);
-      });
+    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+      ProblemSpecificFunctions::initdata(
+        i, j, k, local_m_incompressible, state_arr, aux_arr, geomdata,
+        *lprobparm, lpmfdata);
+    });
   }
 
-  if (m_incompressible == 0) {
+  if (local_m_incompressible == 0) {
     // Initialize thermodynamic pressure
     setThermoPress(lev, AmrNewTime);
     if (m_has_divu != 0) {
@@ -401,7 +412,7 @@ PeleLM::projectInitSolution()
       std::unique_ptr<AdvanceDiffData> diffData;
       diffData = std::make_unique<AdvanceDiffData>(
         finest_level, grids, dmap, m_factory, m_nGrowAdv, m_use_wbar,
-        m_use_soret, is_initialization);
+        m_use_soret, m_nAux, is_initialization);
       calcDivU(
         is_initialization, computeDiffusionTerm, do_avgDown, AmrNewTime,
         diffData);
@@ -456,7 +467,7 @@ PeleLM::projectInitSolution()
         std::unique_ptr<AdvanceDiffData> diffData;
         diffData = std::make_unique<AdvanceDiffData>(
           finest_level, grids, dmap, m_factory, m_nGrowAdv, m_use_wbar,
-          m_use_soret, is_initialization);
+          m_use_soret, m_nAux, is_initialization);
         calcDivU(
           is_initialization, computeDiffusionTerm, do_avgDown, AmrNewTime,
           diffData);
