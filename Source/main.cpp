@@ -22,6 +22,14 @@ main(int argc, char* argv[])
     }
   }
 
+#ifdef AMREX_USE_HIP
+  hipError_t herr = hipInit(0);
+  if (herr != hipSuccess) {
+        fprintf(stderr, "hipInit failed: %s\n", hipGetErrorString(herr));
+        return 1;
+  }
+#endif
+
   // in AMReX.cpp
   Initialize(argc, argv);
 
