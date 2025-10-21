@@ -309,9 +309,54 @@ PeleLM::addScalarVarianceSources(const TimeStamp& a_timestamp)
         // it always is stored at AmrOldTime, so we just use that
         // We need cell-centered mu_t but have it at faces
         // The simple interpolation below probably isn't valid for EB
+      const auto& ba = grids[lev];
+      const auto& factory = Factory(lev);
+      MultiFab visc_turb_cc(ba, dmap[lev], 1, nGrow, MFInfo(), factory);
 #ifdef AMREX_USE_EB
-        amrex::Abort(
-          "PeleLM::addScalarVarianceSources(): this is not supported with EB");
+        // amrex::Abort(
+        //   "PeleLM::addScalarVarianceSources(): this is not supported with EB");
+    // Cell faces to cell centers
+      MultiFab visc_turb_cc_vec(ba, dmap[lev], AMREX_SPACEDIM, nGrow, MFInfo(), factory);
+      
+      amrex::Array<MultiFab const*, AMREX_SPACEDIM> fmf;
+      for (int d = 0; d < AMREX_SPACEDIM; ++d) fmf[d] = &m_leveldata_old[lev]->visc_turb_fc[d];
+      EB_average_face_to_cellcenter(visc_turb_cc_vec, 0, fmf);
+
+      for (MFIter mfi(visc_turb_cc_vec, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+          const Box& bx = mfi.tilebox();
+          auto const& vec = visc_turb_cc_vec.const_array(mfi);
+          auto const& sca = visc_turb_cc.array(mfi); // 1-comp MF you own
+
+          amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i,int j,int k) noexcept {
+              Real sum = 0.0;
+              for (int d = 0; d < AMREX_SPACEDIM; ++d) sum += vec(i,j,k,d);
+              sca(i,j,k) = sum / Real(AMREX_SPACEDIM);
+          });
+      }
+#else
+      constexpr amrex::Real fact = 0.5 / AMREX_SPACEDIM;
+
+      AMREX_D_TERM(
+        auto const& mut_arr_x =
+          m_leveldata_old[lev]->visc_turb_fc[0].const_arrays();
+        , auto const& mut_arr_y =
+            m_leveldata_old[lev]->visc_turb_fc[1].const_arrays();
+        , auto const& mut_arr_z =
+            m_leveldata_old[lev]->visc_turb_fc[2].const_arrays();)
+      
+      auto mu_t = visc_turb_cc.arrays();
+
+      amrex::ParallelFor(
+        *m_extSource[lev],
+        [=] AMREX_GPU_DEVICE(int bx, int i, int j, int k) noexcept { 
+          mu_t[bx](i, j, k) =
+            fact *
+            (AMREX_D_TERM(
+              mut_arr_x[bx](i, j, k) + mut_arr_x[bx](i + 1, j, k),
+              +mut_arr_y[bx](i, j, k) + mut_arr_y[bx](i, j + 1, k),
+              +mut_arr_z[bx](i, j, k) + mut_arr_z[bx](i, j, k + 1)));
+        });
+
 #endif
 
         for (int n = 0; n < MANIFOLD_DIM; ++n) {
@@ -334,11 +379,24 @@ PeleLM::addScalarVarianceSources(const TimeStamp& a_timestamp)
               , auto const& gz = grad_fc[lev][2].const_arrays();)
             auto extma = m_extSource[lev]->arrays();
             auto statema = ldata_p->state.const_arrays();
-
+            auto chi_sgs_arr = ldata_p->chi_sgs.arrays();
+            auto mu_t = visc_turb_cc.arrays();
+            
             // l_scale will also need modification for EB
             const amrex::Real vol = AMREX_D_TERM(
               geom[lev].CellSize(0), *geom[lev].CellSize(1),
               *geom[lev].CellSize(2));
+
+#ifdef AMREX_USE_EB
+            auto const& ebfact = EBFactory(lev);
+            auto const vfrac = ebfact.getVolFrac().const_arrays();
+// #else
+//             // l_scale can be computed outside ParallelFor if not using EB
+//             const amrex::Real l_scale =
+//               (AMREX_SPACEDIM == 2) ? std::sqrt(vol) : std::cbrt(vol);
+//             const amrex::Real inv_l_scale2 = 1.0 / (l_scale * l_scale);
+#endif
+
             const amrex::Real l_scale =
               (AMREX_SPACEDIM == 2) ? std::sqrt(vol) : std::cbrt(vol);
             const amrex::Real inv_l_scale2 = 1.0 / (l_scale * l_scale);
@@ -348,16 +406,21 @@ PeleLM::addScalarVarianceSources(const TimeStamp& a_timestamp)
               [=] AMREX_GPU_DEVICE(int bx, int i, int j, int k) noexcept {
                 // Subfilter Scalar Dissipation: Linear Relaxation model
                 // rho chi_sgs = C_chi * mu_t / Delta^2 * Variance
-                amrex::Real mu_t =
-                  fact *
-                  (AMREX_D_TERM(
-                    mut_arr_x[bx](i, j, k) + mut_arr_x[bx](i + 1, j, k),
-                    +mut_arr_y[bx](i, j, k) + mut_arr_y[bx](i, j + 1, k),
-                    +mut_arr_z[bx](i, j, k) + mut_arr_z[bx](i, j, k + 1)));
 
-                extma[bx](i, j, k, FIRSTSPEC + n) -=
-                  C_chi * mu_t * inv_l_scale2 *
+// #ifdef AMREX_USE_EB
+//                 // --- Modification for EB ---
+//                 const amrex::Real l_scale =
+//                   (AMREX_SPACEDIM == 2) ? std::sqrt(vol*vfrac[bx](i, j, k)) : std::cbrt(vol*vfrac[bx](i, j, k));
+//                 const amrex::Real inv_l_scale2 = 1.0 / (l_scale * l_scale);
+// #endif
+                amrex::Real chi_sgs = 
+                  C_chi * mu_t[bx](i, j, k) * inv_l_scale2 *
                   statema[bx](i, j, k, FIRSTSPEC + n);
+
+                extma[bx](i, j, k, FIRSTSPEC + n) -= chi_sgs
+
+
+                chi_sgs_arr[bx](i,j,k) = chi_sgs;
 
                 // Production term (w/ Smagorinsky closure for turbulent flux)
                 // -2 (rho <u_j C> - rho <u_j><C>) d<C>/dx_j
