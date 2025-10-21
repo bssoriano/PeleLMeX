@@ -23,6 +23,8 @@ PeleLM::LevelData::LevelData(
     amrex::convert(ba, IntVect::TheNodeVector()), dm, 1, 1, MFInfo(), factory);
   visc_cc.define(ba, dm, 1, 1, MFInfo(), factory);
   if (a_do_les != 0) {
+    //Define storage for subgrid dissipation rate 
+    chi_sgs.define(ba, dm, 1, 1, MFInfo(), factory);
     for (int i = 0; i < AMREX_SPACEDIM; ++i) {
       visc_turb_fc[i].define(
         amrex::convert(ba, IntVect::TheDimensionVector(i)), dm, 1, 0, MFInfo(),

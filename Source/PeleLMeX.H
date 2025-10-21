@@ -193,6 +193,7 @@ public:
       lambda_turb_fc;            // Turbulent thermal conductivity (dim:)
     amrex::MultiFab diff_cc;     // Diffusivity (dim:NUM_SPECIES+2)
     amrex::MultiFab diff_aux_cc; // Diffusivity of auxiliaries (dim:m_nAux)
+    amrex::MultiFab chi_sgs;     // Storage for subgrid dissipation rate chi_sgs (dim:)
 #ifdef PELE_USE_PLASMA
     amrex::MultiFab diffE_cc; // Electron diffusivity (dim:1)
     amrex::MultiFab mobE_cc;  // Electron mobility (dim:1)
@@ -1458,7 +1459,6 @@ public:
   
   void getEBState(
     int a_lev,
-    const PeleLM::TimeStamp &a_time,
     const PeleLM::TimeStamp& a_time,
     amrex::MultiFab& a_EBstate,
     int stateComp,

@@ -170,6 +170,7 @@ PeleLM::WritePlotFile()
 
   if (m_plot_extSource) {
     ncomp += NVAR;
+    ncomp += 1; //chi_sgs
   }
 
   //----------------------------------------------------------------
@@ -304,7 +305,9 @@ PeleLM::WritePlotFile()
     for (int ivar = 0; ivar < NVAR; ++ivar) {
       plt_VarsName.push_back("extsource_" + stateVariableName(ivar));
     }
+    plt_VarsName.push_back("chi_sgs");
   }
+
 
   //----------------------------------------------------------------
   // Fill the plot MultiFabs
@@ -467,6 +470,8 @@ PeleLM::WritePlotFile()
 
     if (m_plot_extSource) {
       MultiFab::Copy(mf_plt[lev], *m_extSource[lev], 0, cnt, NVAR, 0);
+      cnt += NVAR;
+      MultiFab::Copy(mf_plt[lev], m_leveldata_old[lev]->chi_sgs, 0, cnt, 1, 0);
     }
 
 #ifdef AMREX_USE_EB
