@@ -417,7 +417,7 @@ PeleLM::addScalarVarianceSources(const TimeStamp& a_timestamp)
                   C_chi * mu_t[bx](i, j, k) * inv_l_scale2 *
                   statema[bx](i, j, k, FIRSTSPEC + n);
 
-                extma[bx](i, j, k, FIRSTSPEC + n) -= chi_sgs
+                extma[bx](i, j, k, FIRSTSPEC + n) -= chi_sgs;
 
 
                 chi_sgs_arr[bx](i,j,k) = chi_sgs;
