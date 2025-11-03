@@ -35,7 +35,7 @@ ifeq ($(USE_MANIFOLD), TRUE)
   Eos_Model       = Manifold
   Chemistry_Model = Null
   Transport_Model = Manifold
-  Manifold_Dim = 2
+  Manifold_Dim = 3
   Manifold_Type = Table
 else
   Chemistry_Model = drm19
@@ -43,7 +43,7 @@ else
   Transport_Model = Simple
 endif
 
-PELE_HOME ?= /home/bsouzas/PeleLMeX/
-#PELE_PHYSICS_HOME ?= /home/bsouzas/my_LMeX/PelePhysics/
-#PELE_HOME ?= /home/bsouzas/my_LMeX/PeleLMeX/
+# PELE_HOME ?= /home/bsouzas/PeleLMeX/
+PELE_PHYSICS_HOME ?= /home/bsouzas/my_LMeX/PelePhysics/
+PELE_HOME ?= /home/bsouzas/my_LMeX/PeleLMeX/
 include $(PELE_HOME)/Exec/Make.PeleLMeX

@@ -37,10 +37,14 @@ struct MyProbParm : public ProbParmDefault
 
   pele::physics::eos::EosParm<pele::physics::PhysicsType::eos_type> const*
     eosparm;
-
-  //int Zvar_ID = 0;
-  int Z_ID = 1;
+  
+  int Zvar_ID = 1;
+  int Z_ID = 2;
   int C_ID = 0;
+  
+  //int Z_ID = 1;
+  //int C_ID = 0;
+
 };
 
 struct MyProblemSpecificFunctions : public DefaultProblemSpecificFunctions
@@ -87,7 +91,7 @@ struct MyProblemSpecificFunctions : public DefaultProblemSpecificFunctions
     }
   
     amrex::Real massfrac[NUM_SPECIES] = {0.0};
-    //massfrac[prob_parm.Zvar_ID] = 0.0;
+    massfrac[prob_parm.Zvar_ID] = 0.0;
     massfrac[prob_parm.C_ID] = 0.0;
     massfrac[prob_parm.Z_ID] = 0.0;
   
@@ -144,7 +148,7 @@ struct MyProblemSpecificFunctions : public DefaultProblemSpecificFunctions
     //  s_ext[VELY] = 0.0;
     //}
     massfrac[prob_parm.Z_ID] = 0.0;
-    //massfrac[prob_parm.Zvar_ID] = 0.0;
+    massfrac[prob_parm.Zvar_ID] = 0.0;
     massfrac[prob_parm.C_ID] = 0.0;
   
     s_ext[TEMP] = prob_parm.T_mean;
@@ -219,7 +223,7 @@ struct MyProblemSpecificFunctions : public DefaultProblemSpecificFunctions
               
 
               massfrac[prob_parm.Z_ID] = prob_parm.jet_Yfuel;
-	      //massfrac[prob_parm.Zvar_ID] = 0.0;
+	      massfrac[prob_parm.Zvar_ID] = 0.0;
               
 	      if(time > prob_parm.start_time_injProd and time < prob_parm.start_time_injProd+prob_parm.duration_injProd){
                   massfrac[prob_parm.C_ID] = 1.0;

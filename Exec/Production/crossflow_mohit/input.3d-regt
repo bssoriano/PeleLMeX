@@ -57,8 +57,8 @@ peleLM.do_mass_balance = 1
 
 # amr.max_step = 5050
 amr.dt_shrink = 0.1
-amr.stop_time = 0.4
-amr.cfl = 0.5
+amr.stop_time = 0.25
+amr.cfl = 0.7
 # amr.max_dt = 2.e-6
 
 mac_proj.verbose = 2
@@ -84,7 +84,7 @@ amr.checkpoint_files_output = 1
 # amr.restart             = chk34000
 # amr.initDataPlt         = results_2step_mech/plt05040
 amr.check_file          = chk          # root name of checkpoint file
-amr.check_int           = 500           # number of timesteps between checkpoints
+amr.check_int           = 1000           # number of timesteps between checkpoints
 amr.plot_per            = 10.e-3
 amr.derive_plot_vars = avg_pressure mag_vort mag_vel mass_fractions maniout progress_variable
 
@@ -136,7 +136,7 @@ amr.gradT.field_name = temp
 manifold.model = Table
 manifold.v = 1
 manifold.table.v = 2
-manifold.table.filename = nonpremixed_2D.ctb
+manifold.table.filename = nonpremixed_3D.ctb
 manifold.nominal_pressure_cgs = 1013250.0
 manifold.compute_temperature = 1
 manifold.density_lookup_type = linear
