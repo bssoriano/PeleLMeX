@@ -2059,6 +2059,10 @@ public:
   amrex::Real m_typicalYvalMin = 1.0e-10;
   amrex::Vector<amrex::Real> typical_values;
 
+  //Untag cells based on location
+  amrex::Real max_lv_y_threshold = 1.e20;
+  amrex::Real y_threshold = -1.e20;
+
 #ifdef AMREX_USE_EB
   // EB
   std::string m_EB_refine_type = "Static";

@@ -30,6 +30,29 @@ PeleLM::ErrorEst(int lev, TagBoxArray& tags, Real time, int /*ng*/)
     errTag(tags, mf.get(), TagBox::CLEAR, TagBox::SET, time, lev, geom[lev]);
   }
 
+  if(lev >= max_lv_y_threshold){
+    // Untag cells when y is lower than max_lv_y_threshold
+
+  #ifdef AMREX_USE_OMP
+  #pragma omp parallel if (Gpu::notInLaunchRegion())
+  #endif
+      const amrex::Real* prob_lo = geom[lev].ProbLo();
+      const amrex::Real* dx = geom[lev].CellSize();
+
+      for (MFIter mfi(tags, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+        const auto& bx = mfi.tilebox();
+        auto tag = tags.array(mfi);
+        amrex::ParallelFor(bx, [=] AMREX_GPU_HOST_DEVICE(int i, int j, int k) {
+          amrex::Real y = prob_lo[1] + (j + 0.5) * dx[1];
+          if (y < y_threshold) {
+            tag(i, j, k) = TagBox::CLEAR;
+          }
+        });
+      }
+  }
+
+    
+
 #ifdef AMREX_USE_EB
   // Untag covered cells
 #ifdef AMREX_USE_OMP

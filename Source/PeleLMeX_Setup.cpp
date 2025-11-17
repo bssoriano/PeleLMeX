@@ -1415,6 +1415,9 @@ PeleLM::taggingSetup()
   std::string amr_prefix = "amr";
   ParmParse ppamr(amr_prefix);
 
+  ppamr.query("max_lv_y_threshold",max_lv_y_threshold);
+  ppamr.query("y_threshold",y_threshold);
+
   Vector<std::string> refinement_indicators;
   ppamr.queryarr(
     "refinement_indicators", refinement_indicators, 0,
