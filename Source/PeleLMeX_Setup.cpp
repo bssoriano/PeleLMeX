@@ -189,7 +189,7 @@ PeleLM::Setup()
   resizeArray();
 
   // Mixture fraction & Progress variable
-  initMixtureFraction();
+  // initMixtureFraction();
   initProgressVariable();
 
   // Initialize turbulence injection
