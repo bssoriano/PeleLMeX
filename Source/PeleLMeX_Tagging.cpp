@@ -39,14 +39,24 @@ PeleLM::ErrorEst(int lev, TagBoxArray& tags, Real time, int /*ng*/)
       const amrex::Real* prob_lo = geom[lev].ProbLo();
       const amrex::Real* dx = geom[lev].CellSize();
 
+      const amrex::Real prob_lo_y = prob_lo[1];
+      const amrex::Real dy = dx[1];
+
+      const amrex::Real MaxYdir_refine = y_threshold;
+
       for (MFIter mfi(tags, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
-        const auto& bx = mfi.tilebox();
+        
+	const auto& bx = mfi.tilebox();
         auto tag = tags.array(mfi);
-        amrex::ParallelFor(bx, [=] AMREX_GPU_HOST_DEVICE(int i, int j, int k) {
-          amrex::Real y = prob_lo[1] + (j + 0.5) * dx[1];
-          if (y < y_threshold) {
+        
+	amrex::ParallelFor(bx, [=] AMREX_GPU_HOST_DEVICE(int i, int j, int k) {
+          
+	  const amrex::Real y = prob_lo_y + (j + 0.5) * dy;
+          
+	  if (y < MaxYdir_refine) {
             tag(i, j, k) = TagBox::CLEAR;
           }
+
         });
       }
   }
