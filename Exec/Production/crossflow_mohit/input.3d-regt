@@ -1,8 +1,8 @@
 #----------------------DOMAIN DEFINITION------------------------
 geometry.is_periodic = 0 0                # For each dir, 0: non-perio, 1: periodic
 geometry.coord_sys   = 0                  # 0 => cart, 1 => RZ
-geometry.prob_lo     = 0.0     0.0    -0.762      # x_lo y_lo (z_lo)
-geometry.prob_hi     = 1.524   3.048   0.762      # x_hi y_hi (z_hi)
+geometry.prob_lo     = 0.0     0.0    -0.25935      # x_lo y_lo (z_lo)
+geometry.prob_hi     = 0.5187  1.5561  0.25935      # x_hi y_hi (z_hi)
 
 # >>>>>>>>>>>>>  BC FLAGS <<<<<<<<<<<<<<<<
 # Interior, Inflow, Outflow, Symmetry,
@@ -12,7 +12,7 @@ peleLM.hi_bc = SlipWallIsotherm Outflow SlipWallIsotherm
 
 
 #-------------------------AMR CONTROL----------------------------
-amr.n_cell          = 96 192 96        # Level 0 number of cells in each direction   
+amr.n_cell          = 32 96 32        # Level 0 number of cells in each direction   
 amr.v               = 1                # AMR verbose
 amr.max_level       = 2                # maximum level number allowed
 amr.ref_ratio       = 2 2 2 2          # refinement ratio
@@ -27,8 +27,8 @@ prob.T_mean = 298.0
 prob.P_mean = 101325.0
 prob.meanFlowMag = 9.0
 prob.meanFlowDir = 2
-prob.jet_loc = 0.0 0.762 0.0
-prob.jet_radius = 0.0381 #0.00206
+prob.jet_loc = 0.0 0.247 0.0
+prob.jet_radius = 0.01235
 prob.jet_vel = 3.0
 prob.jet_T = 298.
 prob.jet_Yfuel = 1.0
@@ -57,7 +57,7 @@ peleLM.do_mass_balance = 1
 
 # amr.max_step = 5050
 amr.dt_shrink = 0.1
-amr.stop_time = 0.25
+amr.stop_time = 2.5
 amr.cfl = 0.7
 # amr.max_dt = 2.e-6
 
@@ -81,19 +81,19 @@ peleLM.progressVariable.hotState = "PROG:1"
 
 #-------------------------IO CONTROL----------------------------
 amr.checkpoint_files_output = 1
-# amr.restart             = chk34000
+amr.restart             = ../chk125490
 # amr.initDataPlt         = results_2step_mech/plt05040
 amr.check_file          = chk          # root name of checkpoint file
 amr.check_int           = 1000           # number of timesteps between checkpoints
-amr.plot_per            = 10.e-3
+amr.plot_per            = 50.e-3
 amr.derive_plot_vars = avg_pressure mag_vort mag_vel mass_fractions maniout progress_variable
 
 #------------------------- EB SETUP -----------------------------
 eb2.geom_type = cylinder
-eb2.cylinder_radius     = 0.0381 #1mm wall between inflow jet and cylinder 
+eb2.cylinder_radius     = 0.02235 #1mm wall between inflow jet and cylinder 
 eb2.cylinder_direction  = 0
-eb2.cylinder_center     = 0.0 0.762 0.0
-eb2.cylinder_height     = 0.762
+eb2.cylinder_center     = 0.0 0.247 0.0
+eb2.cylinder_height     = 0.247
 eb2.cylinder.internal_flow    = false
 eb2.cylinder_has_fluid_inside = 0
 eb2.small_volfrac = 1.0e-6
