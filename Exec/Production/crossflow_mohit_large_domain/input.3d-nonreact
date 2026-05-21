@@ -1,0 +1,116 @@
+#----------------------DOMAIN DEFINITION------------------------
+geometry.is_periodic = 0 0                # For each dir, 0: non-perio, 1: periodic
+geometry.coord_sys   = 0                  # 0 => cart, 1 => RZ
+geometry.prob_lo     = -0.25935  0.0    -0.51870      # x_lo y_lo (z_lo)
+geometry.prob_hi     =  0.77805  1.5561  0.51870      # x_hi y_hi (z_hi)
+
+# >>>>>>>>>>>>>  BC FLAGS <<<<<<<<<<<<<<<<
+# Interior, Inflow, Outflow, Symmetry,
+# SlipWallAdiab, NoSlipWallAdiab, SlipWallIsotherm, NoSlipWallIsotherm
+peleLM.lo_bc = Outflow  Inflow  Outflow
+peleLM.hi_bc = Outflow  Outflow Outflow
+
+
+#-------------------------AMR CONTROL----------------------------
+amr.n_cell          = 64 96 64        # Level 0 number of cells in each direction
+amr.v               = 1                # AMR verbose
+amr.max_level       = 2                # maximum level number allowed
+amr.ref_ratio       = 2 2 2 2          # refinement ratio
+amr.regrid_int      = 2                # how often to regrid
+amr.n_error_buf     = 1 1 2 2          # number of buffer cells in error est
+amr.grid_eff        = 0.9              # what constitutes an efficient grid
+amr.blocking_factor = 16               # block factor in grid generation (min box size)
+amr.max_grid_size   = 32               # max box size
+
+#--------------------------- Problem -------------------------------
+prob.T_mean = 298.0
+prob.P_mean = 101325.0
+prob.meanFlowMag = 9.0
+prob.meanFlowDir = 2
+prob.jet_loc = 0.0 0.247 0.0
+prob.jet_radius = 0.01235
+prob.jet_vel = 0.0
+prob.jet_T = 298.
+prob.jet_Yfuel = 1.0
+prob.start_time_injProd = 0.1
+prob.duration_injProd = 50.e-3
+
+#-------------------------PeleLM CONTROL----------------------------
+peleLM.v = 1
+peleLM.incompressible = 1
+peleLM.rho = 1.17
+peleLM.mu = 0.0003
+peleLM.EBinflow = 1
+peleLM.deltaT_crashIfFailing = 0
+
+peleLM.do_temporals = 1
+peleLM.do_mass_balance = 1
+
+amr.max_step = 0
+amr.dt_shrink = 0.1
+amr.stop_time = 0.05
+amr.cfl = 0.7
+
+mac_proj.verbose = 2
+nodal_proj.verbose = 2
+
+nodal_proj.atol = 2.0e-10
+nodal_proj.rtol = 2.0e-10
+nodal_proj.maxiter = 1000
+nodal_proj.bottom_maxiter = 1000
+
+mac_proj.atol = 2.0e-10
+mac_proj.rtol = 2.0e-10
+mac_proj.maxiter = 500
+mac_proj.bottom_maxiter = 500
+
+#-------------------------IO CONTROL----------------------------
+amr.checkpoint_files_output = 1
+amr.check_file          = chk_nonreact    # root name of checkpoint file
+amr.check_int           = 2000             # number of timesteps between checkpoints
+# amr.plot_int            = 50
+amr.plot_per            = 50.e-3 
+amr.derive_plot_vars = avg_pressure mag_vort mag_vel
+
+#------------------------- EB SETUP -----------------------------
+eb2.geom_type = UserDefined
+# eb2.geom_type = all_regular
+eb2.cylinder_radius     = 0.02235
+eb2.cylinder_direction  = 0
+eb2.cylinder_center     = -0.067925 0.247 0.0
+eb2.cylinder_height     = 0.38285
+eb2.cylinder.internal_flow    = false
+eb2.cylinder_has_fluid_inside = 0
+
+# Thin walls separating inflow region from zero-velocity buffer at ylo
+# Inflow region boundaries (must match bcnormal constants)
+eb2.inflow_x_lo = 0.0
+eb2.inflow_x_hi = 0.5187
+eb2.inflow_z_lo = -0.25935
+eb2.inflow_z_hi =  0.25935
+# Wall thickness (into buffer) and depth (into domain, +y direction)
+eb2.thin_wall_thickness = 0.05
+eb2.thin_wall_depth     = 0.5
+
+eb2.small_volfrac = 1.0e-6
+
+peleLM.refine_EB_max_level = 2
+eb2.max_level_generation = 2
+
+#--------------------REFINEMENT CONTROL------------------------
+amr.refinement_indicators = near_cyl
+
+amr.gradVel.max_level = 1
+amr.gradVel.adjacent_difference_greater = 1.0
+amr.gradVel.field_name = x_velocity
+
+amr.near_cyl.max_level   = 2
+amr.near_cyl.in_box_lo   = -0.25  0.2  -0.10
+amr.near_cyl.in_box_hi   =  0.18  0.80   0.10
+
+#----------------------- LES ----------------------------
+peleLM.les_model = "Smagorinsky"
+peleLM.les_cs_smag = 0.18
+peleLM.les_v = 1
+peleLM.plot_les = 1
+peleLM.plot_extSource = 1
