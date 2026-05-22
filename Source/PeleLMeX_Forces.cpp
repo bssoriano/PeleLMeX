@@ -382,7 +382,6 @@ PeleLM::addScalarVarianceSources(const TimeStamp& a_timestamp)
             auto chi_sgs_arr = ldata_p->chi_sgs.arrays();
             auto mu_t = visc_turb_cc.arrays();
             
-            // l_scale will also need modification for EB
             const amrex::Real vol = AMREX_D_TERM(
               geom[lev].CellSize(0), *geom[lev].CellSize(1),
               *geom[lev].CellSize(2));
@@ -390,30 +389,24 @@ PeleLM::addScalarVarianceSources(const TimeStamp& a_timestamp)
 #ifdef AMREX_USE_EB
             auto const& ebfact = EBFactory(lev);
             auto const vfrac = ebfact.getVolFrac().const_arrays();
-// #else
-//             // l_scale can be computed outside ParallelFor if not using EB
-//             const amrex::Real l_scale =
-//               (AMREX_SPACEDIM == 2) ? std::sqrt(vol) : std::cbrt(vol);
-//             const amrex::Real inv_l_scale2 = 1.0 / (l_scale * l_scale);
 #endif
-
-            const amrex::Real l_scale =
-              (AMREX_SPACEDIM == 2) ? std::sqrt(vol) : std::cbrt(vol);
-            const amrex::Real inv_l_scale2 = 1.0 / (l_scale * l_scale);
 
             amrex::ParallelFor(
               *m_extSource[lev],
               [=] AMREX_GPU_DEVICE(int bx, int i, int j, int k) noexcept {
                 // Subfilter Scalar Dissipation: Linear Relaxation model
                 // rho chi_sgs = C_chi * mu_t / Delta^2 * Variance
-
-// #ifdef AMREX_USE_EB
-//                 // --- Modification for EB ---
-//                 const amrex::Real l_scale =
-//                   (AMREX_SPACEDIM == 2) ? std::sqrt(vol*vfrac[bx](i, j, k)) : std::cbrt(vol*vfrac[bx](i, j, k));
-//                 const amrex::Real inv_l_scale2 = 1.0 / (l_scale * l_scale);
-// #endif
-                amrex::Real chi_sgs = 
+#ifdef AMREX_USE_EB
+                const amrex::Real vf = vfrac[bx](i, j, k);
+                if (vf <= 0.0) { return; }
+                const amrex::Real l_scale =
+                  (AMREX_SPACEDIM == 2) ? std::sqrt(vol * vf) : std::cbrt(vol * vf);
+#else
+                const amrex::Real l_scale =
+                  (AMREX_SPACEDIM == 2) ? std::sqrt(vol) : std::cbrt(vol);
+#endif
+                const amrex::Real inv_l_scale2 = 1.0 / (l_scale * l_scale);
+                amrex::Real chi_sgs =
                   C_chi * mu_t[bx](i, j, k) * inv_l_scale2 *
                   statema[bx](i, j, k, FIRSTSPEC + n);
 
