@@ -1,8 +1,8 @@
 #----------------------DOMAIN DEFINITION------------------------
 geometry.is_periodic = 0 0                # For each dir, 0: non-perio, 1: periodic
 geometry.coord_sys   = 0                  # 0 => cart, 1 => RZ
-geometry.prob_lo     = -0.25935  0.0    -0.51870      # x_lo y_lo (z_lo)
-geometry.prob_hi     =  0.77805  1.5561  0.51870      # x_hi y_hi (z_hi)
+geometry.prob_lo     = -0.25935  -0.453  -0.51870      # x_lo y_lo (z_lo)
+geometry.prob_hi     =  0.77805   1.6218  0.51870      # x_hi y_hi (z_hi)
 
 # >>>>>>>>>>>>>  BC FLAGS <<<<<<<<<<<<<<<<
 # Interior, Inflow, Outflow, Symmetry,
@@ -12,7 +12,7 @@ peleLM.hi_bc = Outflow  Outflow Outflow
 
 
 #-------------------------AMR CONTROL----------------------------
-amr.n_cell          = 64 96 64        # Level 0 number of cells in each direction
+amr.n_cell          = 64 128 64       # Level 0 number of cells in each direction
 amr.v               = 1                # AMR verbose
 amr.max_level       = 2                # maximum level number allowed
 amr.ref_ratio       = 2 2 2 2          # refinement ratio
@@ -46,7 +46,7 @@ peleLM.deltaT_crashIfFailing = 0
 peleLM.do_temporals = 1
 peleLM.do_mass_balance = 1
 
-amr.max_step = 0
+# amr.max_step = 10
 amr.dt_shrink = 0.1
 amr.stop_time = 0.05
 amr.cfl = 0.7
@@ -75,22 +75,22 @@ amr.derive_plot_vars = avg_pressure mag_vort mag_vel
 #------------------------- EB SETUP -----------------------------
 eb2.geom_type = UserDefined
 # eb2.geom_type = all_regular
-eb2.cylinder_radius     = 0.02235
+eb2.cylinder_radius     = 0.0254
 eb2.cylinder_direction  = 0
-eb2.cylinder_center     = -0.067925 0.247 0.0
-eb2.cylinder_height     = 0.38285
+eb2.cylinder_center     = -0.04935 0.247 0.0
+eb2.cylinder_height     = 0.42
 eb2.cylinder.internal_flow    = false
 eb2.cylinder_has_fluid_inside = 0
 
 # Thin walls separating inflow region from zero-velocity buffer at ylo
 # Inflow region boundaries (must match bcnormal constants)
-eb2.inflow_x_lo = 0.0
-eb2.inflow_x_hi = 0.5187
-eb2.inflow_z_lo = -0.25935
-eb2.inflow_z_hi =  0.25935
+eb2.inflow_x_lo = -0.09065
+eb2.inflow_x_hi =  0.60935
+eb2.inflow_z_lo = -0.35
+eb2.inflow_z_hi =  0.35
 # Wall thickness (into buffer) and depth (into domain, +y direction)
 eb2.thin_wall_thickness = 0.05
-eb2.thin_wall_depth     = 0.5
+eb2.thin_wall_depth     = 0.35
 
 eb2.small_volfrac = 1.0e-6
 

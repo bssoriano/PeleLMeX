@@ -47,6 +47,12 @@ struct MyProbParm : public ProbParmDefault
   int Zvar_ID = 1;
   int Z_ID = 2;
   int C_ID = 0;
+
+  // Inflow duct x/z extents (read from eb2.inflow_* in input file)
+  amrex::Real inflow_x_lo = 0.0;
+  amrex::Real inflow_x_hi = 0.0;
+  amrex::Real inflow_z_lo = 0.0;
+  amrex::Real inflow_z_hi = 0.0;
   
   //int Z_ID = 1;
   //int C_ID = 0;
@@ -135,11 +141,10 @@ struct MyProblemSpecificFunctions : public DefaultProblemSpecificFunctions
   
     auto eos = pele::physics::PhysicsType::eos(prob_parm.eosparm);
   
-    // Original domain x/z extents used to restrict y_lo inflow region
-    constexpr amrex::Real x_lo_orig = 0.0,     x_hi_orig = 0.5187;
-    constexpr amrex::Real z_lo_orig = -0.25935, z_hi_orig = 0.25935;
-    const bool in_inflow_region = (x[0] >= x_lo_orig && x[0] <= x_hi_orig &&
-                                   x[2] >= z_lo_orig && x[2] <= z_hi_orig);
+    const bool in_inflow_region = (x[0] >= prob_parm.inflow_x_lo &&
+                                   x[0] <= prob_parm.inflow_x_hi &&
+                                   x[2] >= prob_parm.inflow_z_lo &&
+                                   x[2] <= prob_parm.inflow_z_hi);
 
     switch (prob_parm.meanFlowDir) {
     case 1:
