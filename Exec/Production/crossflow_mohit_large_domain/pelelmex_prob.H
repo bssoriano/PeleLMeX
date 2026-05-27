@@ -48,11 +48,12 @@ struct MyProbParm : public ProbParmDefault
   int Z_ID = 2;
   int C_ID = 0;
 
-  // Inflow duct x/z extents (read from eb2.inflow_* in input file)
-  amrex::Real inflow_x_lo = 0.0;
-  amrex::Real inflow_x_hi = 0.0;
-  amrex::Real inflow_z_lo = 0.0;
-  amrex::Real inflow_z_hi = 0.0;
+  // Inflow duct extents (read from eb2.* in input file)
+  amrex::Real inflow_x_lo    = 0.0;
+  amrex::Real inflow_x_hi    = 0.0;
+  amrex::Real inflow_z_lo    = 0.0;
+  amrex::Real inflow_z_hi    = 0.0;
+  amrex::Real thin_wall_depth = 0.0;
   
   //int Z_ID = 1;
   //int C_ID = 0;
@@ -130,21 +131,23 @@ struct MyProblemSpecificFunctions : public DefaultProblemSpecificFunctions
     const int /*idir*/,
     const int /*sgn*/,
     const amrex::Real time,
-    amrex::GeometryData const& /*geomdata*/,
+    amrex::GeometryData const& geomdata,
     MyProbParm const& prob_parm,
     pele::physics::PMF::PmfData::DataContainer const* /*pmf_data*/)
   {
-  
+
     amrex::Real r = sqrt(pow((prob_parm.jet_loc[1]-x[1]),2)+pow((prob_parm.jet_loc[2]-x[2]),2));
-    
+
     amrex::Real massfrac[NUM_SPECIES] = {0.0};
-  
+
     auto eos = pele::physics::PhysicsType::eos(prob_parm.eosparm);
-  
+
+    const amrex::Real y_wall_hi = geomdata.ProbLo()[1] + prob_parm.thin_wall_depth;
     const bool in_inflow_region = (x[0] >= prob_parm.inflow_x_lo &&
                                    x[0] <= prob_parm.inflow_x_hi &&
                                    x[2] >= prob_parm.inflow_z_lo &&
-                                   x[2] <= prob_parm.inflow_z_hi);
+                                   x[2] <= prob_parm.inflow_z_hi &&
+                                   x[1] <= y_wall_hi);
 
     switch (prob_parm.meanFlowDir) {
     case 1:

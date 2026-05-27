@@ -5,10 +5,11 @@ void
 PeleLM::readProbParm() // NOLINT(readability-make-member-function-const)
 {
   amrex::ParmParse ppeb("eb2");
-  ppeb.get("inflow_x_lo", prob_parm->inflow_x_lo);
-  ppeb.get("inflow_x_hi", prob_parm->inflow_x_hi);
-  ppeb.get("inflow_z_lo", prob_parm->inflow_z_lo);
-  ppeb.get("inflow_z_hi", prob_parm->inflow_z_hi);
+  ppeb.get("inflow_x_lo",    prob_parm->inflow_x_lo);
+  ppeb.get("inflow_x_hi",    prob_parm->inflow_x_hi);
+  ppeb.get("inflow_z_lo",    prob_parm->inflow_z_lo);
+  ppeb.get("inflow_z_hi",    prob_parm->inflow_z_hi);
+  ppeb.get("thin_wall_depth", prob_parm->thin_wall_depth);
 
   amrex::ParmParse pp("prob");
 
