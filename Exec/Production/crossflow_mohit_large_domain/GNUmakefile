@@ -30,20 +30,26 @@ USE_PLASMA = FALSE
 # CEXE_headers += EBUserDefined.H
 
 # PelePhysics
-USE_MANIFOLD = TRUE
+# Set USE_NONREACT=TRUE for a non-reacting test (e.g.: make -j USE_NONREACT=TRUE)
+USE_NONREACT ?= TRUE
+ifeq ($(USE_NONREACT), TRUE)
+  USE_MANIFOLD    = FALSE
+  Chemistry_Model = Null
+  Eos_Model       = GammaLaw
+  Transport_Model = Constant
+else
+  USE_MANIFOLD = TRUE
+endif
+
 ifeq ($(USE_MANIFOLD), TRUE)
   Eos_Model       = Manifold
   Chemistry_Model = Null
   Transport_Model = Manifold
   Manifold_Dim = 3
   Manifold_Type = Table
-else
-  Chemistry_Model = drm19
-  Eos_Model = Fuego
-  Transport_Model = Simple
 endif
 
 # PELE_HOME ?= /home/bsouzas/PeleLMeX/
-PELE_PHYSICS_HOME ?= /home/bsouzas/my_LMeX/PelePhysics/
-PELE_HOME ?= /home/bsouzas/my_LMeX/PeleLMeX/
+PELE_PHYSICS_HOME ?= /Users/soriano/Documents/codes/PelePhysics/
+PELE_HOME ?= /Users/soriano/Documents/codes/PeleLMeX/
 include $(PELE_HOME)/Exec/Make.PeleLMeX
