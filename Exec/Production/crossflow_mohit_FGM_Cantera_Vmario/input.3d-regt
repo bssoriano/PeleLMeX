@@ -1,0 +1,156 @@
+#----------------------DOMAIN DEFINITION------------------------
+geometry.is_periodic = 0 0                # For each dir, 0: non-perio, 1: periodic
+geometry.coord_sys   = 0                  # 0 => cart, 1 => RZ
+geometry.prob_lo     = 0.0     0.0  -0.8001      # x_lo y_lo (z_lo)
+geometry.prob_hi     = 1.6002   4.8006   0.8001      # x_hi y_hi (z_hi)
+
+# >>>>>>>>>>>>>  BC FLAGS <<<<<<<<<<<<<<<<
+# Interior, Inflow, Outflow, Symmetry,
+# SlipWallAdiab, NoSlipWallAdiab, SlipWallIsotherm, NoSlipWallIsotherm
+peleLM.lo_bc = SlipWallAdiab Inflow Symmetry
+peleLM.hi_bc = SlipWallAdiab Outflow Symmetry
+
+
+#-------------------------AMR CONTROL----------------------------
+amr.n_cell          = 32 96 32        # Level 0 number of cells in each direction   
+amr.v               = 1                # AMR verbose
+amr.max_level       = 3                # maximum level number allowed
+amr.ref_ratio       = 2 2 2 2          # refinement ratio
+amr.regrid_int      = 2                # how often to regrid
+amr.n_error_buf     = 1 1 2 2          # number of buffer cells in error est
+amr.grid_eff        = 0.9              # what constitutes an efficient grid
+amr.blocking_factor = 8               # block factor in grid generation (min box size)
+amr.max_grid_size   = 32               # max box size
+
+#--------------------------- Problem -------------------------------
+prob.T_mean = 298.0
+prob.P_mean = 101325.0
+prob.meanFlowMag = 4.5
+prob.meanFlowDir = 2
+prob.jet_loc = 0.0 0.762 0.0
+prob.jet_radius = 0.0381
+prob.jet_vel = 3.0
+prob.jet_T = 698.
+prob.jet_Yfuel = 1.0
+prob.start_time_injProd = 0.1
+prob.duration_injProd = 0.2
+
+#-------------------------PeleLM CONTROL----------------------------
+peleLM.v = 1
+peleLM.incompressible = 0
+peleLM.rho = 1.17
+peleLM.mu = 0.0003
+peleLM.EBinflow = 1
+peleLM.deltaT_crashIfFailing = 0
+peleLM.gravity = -9.81 0.0 0.0 #GRAVITY!!!
+
+peleLM.do_temporals = 1
+peleLM.do_mass_balance = 1
+
+# amr.max_step = 5050
+amr.dt_shrink = 0.1
+amr.stop_time = 20.0
+amr.cfl = 0.8
+# amr.max_dt = 2.e-6
+
+mac_proj.verbose = 3
+nodal_proj.verbose = 3
+
+nodal_proj.atol = 2.0e-10
+nodal_proj.rtol = 2.0e-10
+nodal_proj.maxiter = 1000
+nodal_proj.bottom_maxiter = 1000
+
+mac_proj.atol = 2.0e-10
+mac_proj.rtol = 2.0e-10
+mac_proj.maxiter = 500
+mac_proj.bottom_maxiter = 500
+
+peleLM.progressVariable.format = Cantera
+peleLM.progressVariable.weights = "PROG:1"
+peleLM.progressVariable.coldState = "PROG:0"
+peleLM.progressVariable.hotState = "PROG:1"
+
+#-------------------------IO CONTROL----------------------------
+amr.checkpoint_files_output = 1
+amr.restart             = chk112000
+#amr.initDataPlt         = plt00208
+amr.check_file          = chk          # root name of checkpoint file
+amr.check_int           = 1000           # number of timesteps between checkpoints
+amr.plot_per            = 1.e-2
+amr.derive_plot_vars = avg_pressure mag_vort mag_vel mass_fractions maniout progress_variable
+
+#------------------------- EB SETUP -----------------------------
+eb2.geom_type = cylinder
+eb2.cylinder_radius     = 0.0481 # =0,1D wall between inflow jet and cylinder 
+eb2.cylinder_direction  = 0
+eb2.cylinder_center     = 0.0 0.762 0.0
+eb2.cylinder_height     = 0.762
+eb2.cylinder.internal_flow    = false
+eb2.cylinder_has_fluid_inside = 0
+eb2.small_volfrac = 1.0e-6
+
+peleLM.refine_EB_max_level = 3
+eb2.max_level_generation = 3
+
+#------------------------- CHEMISTRY SOLVER  -----------------------------
+peleLM.chem_integrator = "ReactorRK64"
+# peleLM.chem_integrator = "ReactorCvode"
+# peleLM.chem_integrator = "ReactorNull"
+peleLM.use_typ_vals_chem = 1          # Use species/temp typical values in CVODE
+# ode.rtol = 1.0e-7                     # Relative tolerance of the chemical solve
+# ode.atol = 1.0e-6                     # Absolute tolerance factor applied on typical values
+cvode.solve_type = denseAJ_direct     # CVODE Linear solve type (for Newton direction) 
+cvode.max_order  = 4                  # CVODE max BDF order. 
+ode.clean_init_massfrac = 1
+
+#--------------------REFINEMENT CONTROL------------------------
+#amr.refinement_indicators =  c_source gradT box
+amr.refinement_indicators =  c_source gradT fuel
+#amr.refinement_indicators =  c_source gradT
+#amr.refinement_indicators =  c_source
+
+
+#amr.box.max_level     = 3
+#amr.box.in_box_lo     = 0.38  0.76 -20.e-3
+#amr.box.in_box_hi     = 0.58  1.00  20.e-3
+
+amr.c_source.max_level     = 2
+amr.c_source.value_greater = 1.
+amr.c_source.field_name    = I_R(PROG)
+
+amr.gradT.max_level = 1
+amr.gradT.adjacent_difference_greater = 10
+amr.gradT.field_name = temp
+
+
+amr.fuel.max_level = 1
+amr.fuel.adjacent_difference_greater = 10
+amr.fuel.field_name = Y(ZMIX)
+
+
+#amrex.fpe_trap_invalid = 1
+#amrex.fpe_trap_zero = 1
+#amrex.fpe_trap_overflow = 1
+
+#----------------------- Manifold Stuff ----------------------------
+# pmf.datafile = "prem_drm19_phi1_p1_t298_mani_filter1.875e-02.dat"
+manifold.model = Table
+manifold.v = 1
+manifold.table.v = 2
+manifold.table.filename = nonpremixed_3D_cantera_v2.ctb
+manifold.nominal_pressure_cgs = 1013250.0
+manifold.compute_temperature = 1
+manifold.density_lookup_type = linear
+peleLM.use_wbar = 0
+peleLM.chi_correction_type = DivuFirstIter
+#peleLM.chi_correction_type = NoDivu
+peleLM.print_chi_convergence = 1
+
+peleLM.deltaT_iterMax = -1
+peleLM.les_model = "Smagorinsky"
+peleLM.les_cs_smag = 0.18
+peleLM.les_v = 1
+peleLM.plot_les = 1
+peleLM.plot_extSource = 1
+peleLM.les_c_chi = 20.0
